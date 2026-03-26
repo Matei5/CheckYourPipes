@@ -7,6 +7,7 @@ import time
 import threading
 from PIL import Image
 import RPi.GPIO as GPIO
+import socket
 
 import board
 import busio
@@ -330,9 +331,23 @@ class StreamingHandler(BaseHTTPRequestHandler):
             self.send_error(404)
 
 
+def get_local_ip():
+    try:
+        # Create a socket to determine the local IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        # Fallback to localhost
+        return "127.0.0.1"
+
+
 try:
+    local_ip = get_local_ip()
     server = ThreadingHTTPServer((SERVER_HOST, SERVER_PORT), StreamingHandler)
-    print(f"Server running on http://{SERVER_HOST}:{SERVER_PORT}")
+    print(f"Server running on http://{local_ip}:{SERVER_PORT}")
     server.serve_forever()
 finally:
     GPIO.cleanup()
