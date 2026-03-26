@@ -300,7 +300,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         joystickState.x = offsetX;
                         joystickState.y = offsetY;
                         
-                        stick.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+                        stick.style.transform = 'translate(calc(-50% + ' + offsetX + 'px), calc(-50% + ' + offsetY + 'px))';
                         
                         const command = determineCommand(offsetX, offsetY, constrainedDistance);
                         if (command !== joystickState.lastCommand) {{
@@ -317,7 +317,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                             joystickState.x *= friction;
                             joystickState.y *= friction;
                             
-                            stick.style.transform = `translate(calc(-50% + ${joystickState.x}px), calc(-50% + ${joystickState.y}px))`;
+                            stick.style.transform = 'translate(calc(-50% + ' + joystickState.x + 'px), calc(-50% + ' + joystickState.y + 'px))';
                             
                             if (Math.abs(joystickState.x) > 0.5 || Math.abs(joystickState.y) > 0.5) {{
                                 joystickState.animationFrameId = requestAnimationFrame(animate);
