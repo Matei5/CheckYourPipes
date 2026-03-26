@@ -5,6 +5,7 @@ import json
 import time
 import threading
 from PIL import Image
+import RPi.GPIO as GPIO
 
 import board
 import busio
@@ -16,6 +17,8 @@ picam2.start()
 
 i2c = busio.I2C(board.SCL, board.SDA)
 bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address = 0x76)
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
 
 sensor_data = {
 	"temp": None,
