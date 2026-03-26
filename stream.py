@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse, parse_qs
 from picamera2 import Picamera2
 import io
 import json
@@ -11,22 +12,65 @@ import board
 import busio
 from adafruit_bme280 import basic as adafruit_bme280
 
+# Camera configuration
+CAMERA_WIDTH = 640
+CAMERA_HEIGHT = 480
+
+# I2C and Sensor configuration
+BME280_I2C_ADDRESS = 0x76
+SENSOR_UPDATE_INTERVAL = 2  # seconds
+
+# GPIO configuration
+CONTROL_GPIO_PIN = 4
+
+# Server configuration
+SERVER_HOST = '0.0.0.0'
+SERVER_PORT = 8000
+
+# Streaming configuration
+STREAM_FRAME_INTERVAL = 0.05  # seconds
+SENSOR_FETCH_INTERVAL = 1000  # milliseconds
+
 picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
 picam2.start()
 
 i2c = busio.I2C(board.SCL, board.SDA)
-bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address = 0x76)
+bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.OUT)
+GPIO.setup(4, GPIO.OUT)
+GPIO.output(4, GPIO.LOW)
 
 sensor_data = {
-	"temp": None,
-	"hum": None,
-	"pressure": None,
-	"timestamp": None,
-	"error": None,
+    "temperature": None,
+    "humidity": None,
+    "pressure": None,
+    "timestamp": None,
+    "error": None,
 }
+
+control_state = {
+    "last_command": "stop",
+    "timestamp": time.time()
+}
+
+
+def set_command(cmd):
+    if cmd == "forward":
+        GPIO.output(CONTROL_GPIO_PIN, GPIO.HIGH)
+    elif cmd == "stop":
+        GPIO.output(CONTROL_GPIO_PIN, GPIO.LOW)
+    elif cmd == "left":
+        print("Left command received")
+    elif cmd == "right":
+        print("Right command received")
+    elif cmd == "back":
+        print("Back command received")
+
+    control_state["last_command"] = cmd
+    control_state["timestamp"] = time.time()
+
 
 def update_sensor_loop():
     while True:
@@ -38,14 +82,18 @@ def update_sensor_loop():
             sensor_data["error"] = None
         except Exception as e:
             sensor_data["error"] = str(e)
-        time.sleep(2)
+        time.sleep(SENSOR_UPDATE_INTERVAL)
+
 
 threading.Thread(target=update_sensor_loop, daemon=True).start()
 
+
 class StreamingHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/':
-            html = """
+        parsed = urlparse(self.path)
+
+        if parsed.path == '/':
+            html = f"""
             <!DOCTYPE html>
             <html>
             <head>
@@ -97,18 +145,57 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         color: #b00020;
                         font-weight: bold;
                     }
+                    .controls {
+                        display: grid;
+                        grid-template-columns: repeat(2, 140px);
+                        gap: 10px;
+                        margin-top: 12px;
+                    }
+                    button {
+                        padding: 12px;
+                        font-size: 16px;
+                        border: none;
+                        border-radius: 8px;
+                        background: #e8e8e8;
+                        cursor: pointer;
+                    }
+                    button:hover {
+                        background: #dcdcdc;
+                    }
+                    #control-status {
+                        margin-top: 12px;
+                        font-size: 18px;
+                        font-weight: bold;
+                    }
+                    .help {
+                        margin-top: 10px;
+                        color: #555;
+                    }
                 </style>
             </head>
             <body>
                 <div class="wrap">
                     <div class="card">
                         <h2>Camera Stream</h2>
-                        <img src="/stream.mjpg" width="640" height="480">
+                        <img src="/stream.mjpg" width="{CAMERA_WIDTH}" height="{CAMERA_HEIGHT}">
                     </div>
 
                     <div class="card">
                         <h2>BME280 Data</h2>
                         <div id="sensor-status">Loading...</div>
+                    </div>
+
+                    <div class="card">
+                        <h2>Controls</h2>
+                        <div class="controls">
+                            <button onclick="sendCmd('forward')">Forward</button>
+                            <button onclick="sendCmd('back')">Back</button>
+                            <button onclick="sendCmd('left')">Left</button>
+                            <button onclick="sendCmd('right')">Right</button>
+                            <button onclick="sendCmd('stop')">Stop</button>
+                        </div>
+                        <div id="control-status">Last command: stop</div>
+                        <div class="help">Keyboard: W = forward, S = back, A = left, D = right, Space = stop</div>
                     </div>
                 </div>
 
@@ -147,8 +234,33 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         }
                     }
 
+                    async function sendCmd(cmd) {
+                        try {
+                            const response = await fetch('/control?cmd=' + encodeURIComponent(cmd));
+                            const data = await response.json();
+                            document.getElementById('control-status').textContent =
+                                'Last command: ' + data.last_command;
+                        } catch (err) {
+                            document.getElementById('control-status').textContent =
+                                'Failed to send command';
+                        }
+                    }
+
+                    document.addEventListener('keydown', function(event) {
+                        const key = event.key.toLowerCase();
+
+                        if (key === 'w') sendCmd('forward');
+                        else if (key === 's') sendCmd('back');
+                        else if (key === 'a') sendCmd('left');
+                        else if (key === 'd') sendCmd('right');
+                        else if (key === ' ') {
+                            event.preventDefault();
+                            sendCmd('stop');
+                        }
+                    });
+
                     updateSensor();
-                    setInterval(updateSensor, 1000);
+                    setInterval(updateSensor, {SENSOR_FETCH_INTERVAL});
                 </script>
             </body>
             </html>
@@ -158,17 +270,43 @@ class StreamingHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(html.encode('utf-8'))
 
-        elif self.path == '/sensor.json':
+        elif parsed.path == '/sensor.json':
             self.send_response(200)
-            self.send_header('Content-type', 'aplicatation/json')
+            self.send_header('Content-type', 'application/json')
             self.send_header('Cache-Control', 'no-cache')
             self.end_headers()
             self.wfile.write(json.dumps(sensor_data).encode('utf-8'))
 
-        elif self.path == '/stream.mjpg':
+        elif parsed.path == '/control':
+            query = parse_qs(parsed.query)
+            cmd = query.get('cmd', [''])[0].lower()
+
+            allowed = {"forward", "back", "left", "right", "stop"}
+
+            if cmd in allowed:
+                set_command(cmd)
+                response = {
+                    "ok": True,
+                    "last_command": control_state["last_command"],
+                    "timestamp": control_state["timestamp"]
+                }
+            else:
+                response = {
+                    "ok": False,
+                    "error": "Invalid command",
+                    "last_command": control_state["last_command"]
+                }
+
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Cache-Control', 'no-cache')
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+
+        elif parsed.path == '/stream.mjpg':
             self.send_response(200)
             self.send_header('Content-type', 'multipart/x-mixed-replace; boundary=frame')
-            self.send_header('Cache-Control', 'no-chache')
+            self.send_header('Cache-Control', 'no-cache')
             self.end_headers()
 
             try:
@@ -182,7 +320,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b"Content-Type: image/jpeg\r\n\r\n")
                     self.wfile.write(buffer.getvalue())
                     self.wfile.write(b"\r\n")
-                    time.sleep(0.05)
+                    time.sleep(STREAM_FRAME_INTERVAL)
             except BrokenPipeError:
                 pass
             except ConnectionResetError:
@@ -191,6 +329,10 @@ class StreamingHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404)
 
-server = ThreadingHTTPServer(('0.0.0.0', 8000), StreamingHandler)
-print("Server running on https://0.0.0.0:8000")
-server.serve_forever()
+
+try:
+    server = ThreadingHTTPServer((SERVER_HOST, SERVER_PORT), StreamingHandler)
+    print(f"Server running on http://{SERVER_HOST}:{SERVER_PORT}")
+    server.serve_forever()
+finally:
+    GPIO.cleanup()
