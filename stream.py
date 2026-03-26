@@ -100,77 +100,77 @@ class StreamingHandler(BaseHTTPRequestHandler):
                 <meta charset="utf-8">
                 <title>Pi Camera and BME280</title>
                 <style>
-                    body {
+                    body {{
                         font-family: Arial, sans-serif;
                         background: #f4f4f4;
                         margin: 20px;
-                    }
-                    .wrap {
+                    }}
+                    .wrap {{
                         max-width: 900px;
                         margin: auto;
-                    }
-                    .card {
+                    }}
+                    .card {{
                         background: white;
                         padding: 16px;
                         border-radius: 10px;
                         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
                         margin-bottom: 20px;
-                    }
-                    img {
+                    }}
+                    img {{
                         display: block;
                         max-width: 100%;
                         border-radius: 8px;
-                    }
-                    .sensor-grid {
+                    }}
+                    .sensor-grid {{
                         display: grid;
                         grid-template-columns: repeat(3, 1fr);
                         gap: 12px;
-                    }
-                    .sensor-box {
+                    }}
+                    .sensor-box {{
                         background: #fafafa;
                         padding: 12px;
                         border-radius: 8px;
                         border: 1px solid #ddd;
-                    }
-                    .label {
+                    }}
+                    .label {{
                         font-size: 14px;
                         color: #555;
-                    }
-                    .value {
+                    }}
+                    .value {{
                         font-size: 24px;
                         font-weight: bold;
                         margin-top: 6px;
-                    }
-                    .error {
+                    }}
+                    .error {{
                         color: #b00020;
                         font-weight: bold;
-                    }
-                    .controls {
+                    }}
+                    .controls {{
                         display: grid;
                         grid-template-columns: repeat(2, 140px);
                         gap: 10px;
                         margin-top: 12px;
-                    }
-                    button {
+                    }}
+                    button {{
                         padding: 12px;
                         font-size: 16px;
                         border: none;
                         border-radius: 8px;
                         background: #e8e8e8;
                         cursor: pointer;
-                    }
-                    button:hover {
+                    }}
+                    button:hover {{
                         background: #dcdcdc;
-                    }
-                    #control-status {
+                    }}
+                    #control-status {{
                         margin-top: 12px;
                         font-size: 18px;
                         font-weight: bold;
-                    }
-                    .help {
+                    }}
+                    .help {{
                         margin-top: 10px;
                         color: #555;
-                    }
+                    }}
                 </style>
             </head>
             <body>
@@ -200,64 +200,64 @@ class StreamingHandler(BaseHTTPRequestHandler):
                 </div>
 
                 <script>
-                    async function updateSensor() {
-                        try {
+                    async function updateSensor() {{
+                        try {{
                             const response = await fetch('/sensor.json');
                             const data = await response.json();
 
                             const status = document.getElementById('sensor-status');
 
-                            if (data.error) {
+                            if (data.error) {{
                                 status.innerHTML = '<div class="error">Sensor error: ' + data.error + '</div>';
                                 return;
-                            }
+                            }}
 
                             status.innerHTML = `
                                 <div class="sensor-grid">
                                     <div class="sensor-box">
                                         <div class="label">Temperature</div>
-                                        <div class="value">${data.temperature} °C</div>
+                                        <div class="value">${{data.temperature}} °C</div>
                                     </div>
                                     <div class="sensor-box">
                                         <div class="label">Humidity</div>
-                                        <div class="value">${data.humidity} %</div>
+                                        <div class="value">${{data.humidity}} %</div>
                                     </div>
                                     <div class="sensor-box">
                                         <div class="label">Pressure</div>
-                                        <div class="value">${data.pressure} hPa</div>
+                                        <div class="value">${{data.pressure}} hPa</div>
                                     </div>
                                 </div>
                             `;
-                        } catch (err) {
+                        }} catch (err) {{
                             document.getElementById('sensor-status').innerHTML =
                                 '<div class="error">Failed to load sensor data</div>';
-                        }
-                    }
+                        }}
+                    }}
 
-                    async function sendCmd(cmd) {
-                        try {
+                    async function sendCmd(cmd) {{
+                        try {{
                             const response = await fetch('/control?cmd=' + encodeURIComponent(cmd));
                             const data = await response.json();
                             document.getElementById('control-status').textContent =
                                 'Last command: ' + data.last_command;
-                        } catch (err) {
+                        }} catch (err) {{
                             document.getElementById('control-status').textContent =
                                 'Failed to send command';
-                        }
-                    }
+                        }}
+                    }}
 
-                    document.addEventListener('keydown', function(event) {
+                    document.addEventListener('keydown', function(event) {{
                         const key = event.key.toLowerCase();
 
                         if (key === 'w') sendCmd('forward');
                         else if (key === 's') sendCmd('back');
                         else if (key === 'a') sendCmd('left');
                         else if (key === 'd') sendCmd('right');
-                        else if (key === ' ') {
+                        else if (key === ' ') {{
                             event.preventDefault();
                             sendCmd('stop');
-                        }
-                    });
+                        }}
+                    }});
 
                     updateSensor();
                     setInterval(updateSensor, {SENSOR_FETCH_INTERVAL});
