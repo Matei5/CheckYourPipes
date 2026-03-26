@@ -14,8 +14,8 @@ import busio
 from adafruit_bme280 import basic as adafruit_bme280
 
 # Camera configuration
-CAMERA_WIDTH = 640
-CAMERA_HEIGHT = 480
+CAMERA_WIDTH = 1920
+CAMERA_HEIGHT = 1080
 
 # I2C and Sensor configuration
 BME280_I2C_ADDRESS = 0x76
@@ -33,7 +33,7 @@ STREAM_FRAME_INTERVAL = 0.05  # seconds
 SENSOR_FETCH_INTERVAL = 1000  # milliseconds
 
 picam2 = Picamera2()
-picam2.configure(picam2.create_video_configuration(main={"size": (640, 480)}))
+picam2.configure(picam2.create_video_configuration(main={"size": (1920, 1080)}))
 picam2.start()
 
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -99,7 +99,9 @@ class StreamingHandler(BaseHTTPRequestHandler):
             <html>
             <head>
                 <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, orientation=landscape">
+                <meta name="apple-mobile-web-app-capable" content="yes">
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
                 <title>Pi Camera Control</title>
                 <style>
                     * {{
@@ -129,10 +131,9 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     }}
                     
                     img {{
-                        max-width: 100%;
-                        max-height: 100%;
-                        width: auto;
-                        height: auto;
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
                     }}
                     #sensor-panel {{
                         position: absolute;
@@ -261,13 +262,17 @@ class StreamingHandler(BaseHTTPRequestHandler):
 
                     const stick = document.getElementById('joystick-stick');
                     const base = document.getElementById('joystick-base');
-                    const baseRect = base.getBoundingClientRect();
-                    const maxDistance = 35; // Max drag distance (70px diameter / 2)
-                    const deadZone = 8; // Dead zone radius
+                    const maxDistance = 35;
+                    const deadZone = 8;
+
+                    function getBaseRect() {{
+                        return base.getBoundingClientRect();
+                    }}
 
                     function getAngleAndDistance(x, y) {{
-                        const centerX = baseRect.width / 2;
-                        const centerY = baseRect.height / 2;
+                        const rect = getBaseRect();
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
                         const dx = x - centerX;
                         const dy = y - centerY;
                         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -281,7 +286,6 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         const angle = Math.atan2(dy, dx);
                         const normalizedAngle = (angle + Math.PI) / (2 * Math.PI) * 360;
                         
-                        // Determine primary direction based on angle
                         if (normalizedAngle < 45 || normalizedAngle >= 315) return 'right';
                         if (normalizedAngle >= 45 && normalizedAngle < 135) return 'forward';
                         if (normalizedAngle >= 135 && normalizedAngle < 225) return 'left';
@@ -291,9 +295,12 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     }}
 
                     function updateStickPosition(x, y) {{
-                        const {{ distance }} = getAngleAndDistance(x, y);
+                        const rect = getBaseRect();
+                        const localX = x - rect.left;
+                        const localY = y - rect.top;
+                        const {{ distance }} = getAngleAndDistance(localX, localY);
                         const constrainedDistance = Math.min(distance, maxDistance);
-                        const {{ angle }} = getAngleAndDistance(x, y);
+                        const {{ angle }} = getAngleAndDistance(localX, localY);
                         const offsetX = Math.cos(angle) * constrainedDistance;
                         const offsetY = Math.sin(angle) * constrainedDistance;
                         
@@ -341,18 +348,14 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         joystickState.isDragging = true;
                         stick.classList.add('active');
                         const touch = e.touches[0];
-                        const x = touch.clientX - baseRect.left;
-                        const y = touch.clientY - baseRect.top;
-                        updateStickPosition(x, y);
+                        updateStickPosition(touch.clientX, touch.clientY);
                         e.preventDefault();
                     }});
 
                     document.addEventListener('touchmove', (e) => {{
                         if (!joystickState.isDragging) return;
                         const touch = e.touches[0];
-                        const x = touch.clientX - baseRect.left;
-                        const y = touch.clientY - baseRect.top;
-                        updateStickPosition(x, y);
+                        updateStickPosition(touch.clientX, touch.clientY);
                         e.preventDefault();
                     }});
 
@@ -371,9 +374,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
 
                     document.addEventListener('mousemove', (e) => {{
                         if (!joystickState.isDragging) return;
-                        const x = e.clientX - baseRect.left;
-                        const y = e.clientY - baseRect.top;
-                        updateStickPosition(x, y);
+                        updateStickPosition(e.clientX, e.clientY);
                     }});
 
                     document.addEventListener('mouseup', () => {{
