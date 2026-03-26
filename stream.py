@@ -138,7 +138,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     #sensor-panel {{
                         position: absolute;
                         top: 16px;
-                        right: 16px;
+                        left: 16px;
                         background: rgba(0, 0, 0, 0.75);
                         backdrop-filter: blur(4px);
                         border-radius: 8px;
