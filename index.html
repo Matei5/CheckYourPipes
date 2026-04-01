@@ -165,25 +165,29 @@
         }
         
         #sensor-toggle {
-            background: rgba(59, 130, 246, 0.3);
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
             border: 1px solid rgba(59, 130, 246, 0.5);
             color: white;
-            padding: 6px 8px;
-            border-radius: 4px;
+            padding: 8px 12px;
             cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-            width: 32px;
-            height: 32px;
+            z-index: 102;
+            font-size: 18px;
+            width: 40px;
+            height: 40px;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: all 0.2s ease;
         }
         
         #sensor-toggle:hover {
-            background: rgba(59, 130, 246, 0.5);
+            background: rgba(0, 0, 0, 0.9);
+            border-color: rgba(59, 130, 246, 0.9);
         }
         
         #joystick-container {
@@ -268,9 +272,10 @@
         <img src="/stream.mjpg" alt="Camera Stream">
     </div>
     
+    <button id="sensor-toggle">☰</button>
+    
     <div id="sensor-panel" class="size-medium">
         <div id="panel-header">
-            <button id="sensor-toggle">☰</button>
             <div id="size-buttons">
                 <button class="size-btn" data-size="small">S</button>
                 <button class="size-btn active" data-size="medium">M</button>
