@@ -507,9 +507,10 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         const rect = getBaseRect();
                         const localX = x - rect.left;
                         const localY = y - rect.top;
-                        const {{ distance }} = getAngleAndDistance(localX, localY);
+                        const angleAndDistance = getAngleAndDistance(localX, localY);
+                        const distance = angleAndDistance.distance;
                         const constrainedDistance = Math.min(distance, maxDistance);
-                        const {{ angle }} = getAngleAndDistance(localX, localY);
+                        const angle = angleAndDistance.angle;
                         const offsetX = Math.cos(angle) * constrainedDistance;
                         const offsetY = Math.sin(angle) * constrainedDistance;
                         
