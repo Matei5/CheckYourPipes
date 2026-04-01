@@ -1,0 +1,6 @@
+adafruit-circuitpython-bme280
+adafruit-blinka
+pillow
+adafruit-circuitpython-motor
+adafruit-circuitpython-hcsr04
+adafruit-circuitpython-ads1x15
