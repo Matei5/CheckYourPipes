@@ -14,8 +14,8 @@ import busio
 from adafruit_bme280 import basic as adafruit_bme280
 
 # Camera configuration
-CAMERA_WIDTH = 1920
-CAMERA_HEIGHT = 1080
+CAMERA_WIDTH = 1296 
+CAMERA_HEIGHT = 972
 
 # I2C and Sensor configuration
 BME280_I2C_ADDRESS = 0x76

@@ -78,41 +78,10 @@
             font-size: 16px;
         }
         
-        #sensor-toggle {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            padding: 8px 12px;
-            cursor: pointer;
-            z-index: 101;
-            font-size: 18px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-        
-        #sensor-toggle:hover {
-            background: rgba(0, 0, 0, 0.9);
-        }
-        
-        #sensor-toggle.open {
-            left: 176px;
-        }
-        
         #size-buttons {
             display: flex;
             gap: 4px;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex: 1;
         }
         
         .size-btn {
@@ -184,6 +153,37 @@
         
         .sensor-error {
             color: #f87171;
+        }
+        
+        #panel-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #sensor-toggle {
+            background: rgba(59, 130, 246, 0.3);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: white;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #sensor-toggle:hover {
+            background: rgba(59, 130, 246, 0.5);
         }
         
         #joystick-container {
@@ -268,13 +268,14 @@
         <img src="/stream.mjpg" alt="Camera Stream">
     </div>
     
-    <div id="sensor-toggle">☰</div>
-    
     <div id="sensor-panel" class="size-medium">
-        <div id="size-buttons">
-            <button class="size-btn" data-size="small">S</button>
-            <button class="size-btn active" data-size="medium">M</button>
-            <button class="size-btn" data-size="large">L</button>
+        <div id="panel-header">
+            <button id="sensor-toggle">☰</button>
+            <div id="size-buttons">
+                <button class="size-btn" data-size="small">S</button>
+                <button class="size-btn active" data-size="medium">M</button>
+                <button class="size-btn" data-size="large">L</button>
+            </div>
         </div>
         <div id="sensor-status">
             <div class="sensor-item">

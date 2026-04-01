@@ -26,7 +26,6 @@ sizeButtons.forEach(btn => {
 // Toggle panel open/close
 sensorToggle.addEventListener('click', () => {
     sensorPanel.classList.toggle('collapsed');
-    sensorToggle.classList.toggle('open');
 });
 
 // Size button handlers
