@@ -142,12 +142,97 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         background: rgba(0, 0, 0, 0.75);
                         backdrop-filter: blur(4px);
                         border-radius: 8px;
-                        padding: 12px 16px;
                         color: white;
                         border: 1px solid rgba(255, 255, 255, 0.2);
                         z-index: 100;
+                        max-height: 90vh;
+                        overflow-y: auto;
+                        transition: max-height 0.3s ease;
+                    }}
+                    
+                    #sensor-panel.collapsed {{
+                        max-height: 0;
+                        opacity: 0;
+                        border: none;
+                        overflow: hidden;
+                    }}
+                    
+                    #sensor-panel.size-small {{
+                        padding: 8px 12px;
+                        min-width: 100px;
+                        font-size: 10px;
+                    }}
+                    
+                    #sensor-panel.size-medium {{
+                        padding: 12px 16px;
                         min-width: 140px;
                         font-size: 13px;
+                    }}
+                    
+                    #sensor-panel.size-large {{
+                        padding: 16px 20px;
+                        min-width: 180px;
+                        font-size: 16px;
+                    }}
+                    
+                    #sensor-toggle {{
+                        position: absolute;
+                        top: 16px;
+                        left: 16px;
+                        background: rgba(0, 0, 0, 0.75);
+                        backdrop-filter: blur(4px);
+                        border-radius: 8px;
+                        border: 1px solid rgba(255, 255, 255, 0.2);
+                        color: white;
+                        padding: 8px 12px;
+                        cursor: pointer;
+                        z-index: 101;
+                        font-size: 18px;
+                        width: 40px;
+                        height: 40px;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        transition: all 0.2s ease;
+                    }}
+                    
+                    #sensor-toggle:hover {{
+                        background: rgba(0, 0, 0, 0.9);
+                    }}
+                    
+                    #sensor-toggle.open {{
+                        left: 176px;
+                    }}
+                    
+                    #size-buttons {{
+                        display: flex;
+                        gap: 4px;
+                        margin-bottom: 8px;
+                        padding-bottom: 8px;
+                        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                    }}
+                    
+                    .size-btn {{
+                        background: rgba(59, 130, 246, 0.3);
+                        border: 1px solid rgba(59, 130, 246, 0.5);
+                        color: white;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 11px;
+                        font-weight: bold;
+                        transition: all 0.2s ease;
+                        flex: 1;
+                        text-align: center;
+                    }}
+                    
+                    .size-btn:hover {{
+                        background: rgba(59, 130, 246, 0.5);
+                    }}
+                    
+                    .size-btn.active {{
+                        background: rgba(59, 130, 246, 0.9);
+                        border-color: rgba(59, 130, 246, 0.9);
                     }}
                     
                     .sensor-item {{
@@ -159,17 +244,39 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     }}
                     
                     .sensor-label {{
-                        font-size: 11px;
                         color: rgba(255, 255, 255, 0.7);
                         text-transform: uppercase;
                         letter-spacing: 0.5px;
                     }}
                     
+                    #sensor-panel.size-small .sensor-label {{
+                        font-size: 8px;
+                    }}
+                    
+                    #sensor-panel.size-medium .sensor-label {{
+                        font-size: 11px;
+                    }}
+                    
+                    #sensor-panel.size-large .sensor-label {{
+                        font-size: 13px;
+                    }}
+                    
                     .sensor-value {{
-                        font-size: 16px;
                         font-weight: bold;
                         color: #4ade80;
                         margin-top: 2px;
+                    }}
+                    
+                    #sensor-panel.size-small .sensor-value {{
+                        font-size: 13px;
+                    }}
+                    
+                    #sensor-panel.size-medium .sensor-value {{
+                        font-size: 16px;
+                    }}
+                    
+                    #sensor-panel.size-large .sensor-value {{
+                        font-size: 20px;
                     }}
                     
                     .sensor-error {{
@@ -181,21 +288,34 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         right: 16px;
                         z-index: 100;
                         user-select: none;
+                        transition: all 0.3s ease;
                     }}
                     
                     #joystick-base {{
-                        width: 140px;
-                        height: 140px;
                         border-radius: 50%;
                         background: rgba(59, 130, 246, 0.15);
                         border: 3px solid rgba(59, 130, 246, 0.4);
                         position: relative;
                         touch-action: none;
+                        transition: all 0.3s ease;
+                    }}
+                    
+                    #joystick-container.size-small #joystick-base {{
+                        width: 80px;
+                        height: 80px;
+                    }}
+                    
+                    #joystick-container.size-medium #joystick-base {{
+                        width: 110px;
+                        height: 110px;
+                    }}
+                    
+                    #joystick-container.size-large #joystick-base {{
+                        width: 140px;
+                        height: 140px;
                     }}
                     
                     #joystick-stick {{
-                        width: 70px;
-                        height: 70px;
                         border-radius: 50%;
                         background: rgba(59, 130, 246, 0.9);
                         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2);
@@ -207,10 +327,27 @@ class StreamingHandler(BaseHTTPRequestHandler):
                         display: flex;
                         justify-content: center;
                         align-items: center;
-                        font-size: 24px;
                         font-weight: bold;
                         color: white;
                         transition: box-shadow 0.1s ease;
+                    }}
+                    
+                    #joystick-container.size-small #joystick-stick {{
+                        width: 40px;
+                        height: 40px;
+                        font-size: 18px;
+                    }}
+                    
+                    #joystick-container.size-medium #joystick-stick {{
+                        width: 55px;
+                        height: 55px;
+                        font-size: 20px;
+                    }}
+                    
+                    #joystick-container.size-large #joystick-stick {{
+                        width: 70px;
+                        height: 70px;
+                        font-size: 24px;
                     }}
                     
                     #joystick-stick:hover {{
@@ -227,7 +364,14 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     <img src="/stream.mjpg" alt="Camera Stream">
                 </div>
                 
-                <div id="sensor-panel">
+                <div id="sensor-toggle">☰</div>
+                
+                <div id="sensor-panel" class="size-medium">
+                    <div id="size-buttons">
+                        <button class="size-btn" data-size="small">S</button>
+                        <button class="size-btn active" data-size="medium">M</button>
+                        <button class="size-btn" data-size="large">L</button>
+                    </div>
                     <div id="sensor-status">
                         <div class="sensor-item">
                             <div class="sensor-label">Temperature</div>
@@ -251,6 +395,63 @@ class StreamingHandler(BaseHTTPRequestHandler):
                 </div>
 
                 <script>
+                    // Sensor panel state
+                    const sensorPanel = document.getElementById('sensor-panel');
+                    const sensorToggle = document.getElementById('sensor-toggle');
+                    const joystickContainer = document.getElementById('joystick-container');
+                    const sizeButtons = document.querySelectorAll('.size-btn');
+                    
+                    // Sensitivity settings for each size
+                    const sensitivitySettings = {
+                        small: { maxDistance: 20, deadZone: 4 },
+                        medium: { maxDistance: 27, deadZone: 6 },
+                        large: { maxDistance: 35, deadZone: 8 }
+                    };
+                    
+                    // Load saved size from localStorage or default to medium
+                    let currentSize = localStorage.getItem('sensorSize') || 'medium';
+                    
+                    // Apply saved size on load
+                    sensorPanel.classList.remove('size-small', 'size-medium', 'size-large');
+                    sensorPanel.classList.add('size-' + currentSize);
+                    joystickContainer.classList.remove('size-small', 'size-medium', 'size-large');
+                    joystickContainer.classList.add('size-' + currentSize);
+                    sizeButtons.forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.size === currentSize);
+                    });
+                    
+                    // Toggle panel open/close
+                    sensorToggle.addEventListener('click', () => {
+                        sensorPanel.classList.toggle('collapsed');
+                        sensorToggle.classList.toggle('open');
+                    });
+                    
+                    // Size button handlers
+                    sizeButtons.forEach(btn => {
+                        btn.addEventListener('click', () => {
+                            const newSize = btn.dataset.size;
+                            
+                            // Update active button
+                            sizeButtons.forEach(b => b.classList.remove('active'));
+                            btn.classList.add('active');
+                            
+                            // Update panel size
+                            sensorPanel.classList.remove('size-small', 'size-medium', 'size-large');
+                            sensorPanel.classList.add('size-' + newSize);
+                            
+                            // Update joystick size
+                            joystickContainer.classList.remove('size-small', 'size-medium', 'size-large');
+                            joystickContainer.classList.add('size-' + newSize);
+                            
+                            // Update joystick sensitivity
+                            updateJoystickSensitivity(newSize);
+                            
+                            // Save to localStorage
+                            localStorage.setItem('sensorSize', newSize);
+                            currentSize = newSize;
+                        });
+                    });
+                    
                     // Joystick state
                     const joystickState = {{
                         isDragging: false,
@@ -262,8 +463,16 @@ class StreamingHandler(BaseHTTPRequestHandler):
 
                     const stick = document.getElementById('joystick-stick');
                     const base = document.getElementById('joystick-base');
-                    const maxDistance = 35;
-                    const deadZone = 8;
+                    
+                    // Initialize sensitivity based on current size
+                    let maxDistance = sensitivitySettings[currentSize].maxDistance;
+                    let deadZone = sensitivitySettings[currentSize].deadZone;
+                    
+                    // Function to update joystick sensitivity
+                    function updateJoystickSensitivity(size) {
+                        maxDistance = sensitivitySettings[size].maxDistance;
+                        deadZone = sensitivitySettings[size].deadZone;
+                    }
 
                     function getBaseRect() {{
                         return base.getBoundingClientRect();
