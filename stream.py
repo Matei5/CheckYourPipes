@@ -37,8 +37,16 @@ picam2 = Picamera2()
 picam2.configure(picam2.create_video_configuration(main={"size": (1920, 1080)}))
 picam2.start()
 
-i2c = busio.I2C(board.SCL, board.SDA)
-bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+# Initialize I2C and BME280 only if enabled
+bme280 = None
+if HUMIDITY_SENSOR_ENABLED:
+    try:
+        i2c = busio.I2C(board.SCL, board.SDA)
+        bme280 = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=0x76)
+        print("BME280 sensor initialized successfully")
+    except Exception as e:
+        print(f"Warning: Could not initialize BME280 sensor: {e}")
+        bme280 = None
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(4, GPIO.OUT)
@@ -77,12 +85,18 @@ def set_command(cmd):
 def update_sensor_loop():
     while True:
         try:
-            sensor_data["temperature"] = round(bme280.temperature, 2)
-            if HUMIDITY_SENSOR_ENABLED:
-                sensor_data["humidity"] = round(bme280.humidity, 2)
+            if bme280 is not None:
+                sensor_data["temperature"] = round(bme280.temperature, 2)
+                if HUMIDITY_SENSOR_ENABLED:
+                    sensor_data["humidity"] = round(bme280.humidity, 2)
+                else:
+                    sensor_data["humidity"] = None  # Humidity sensor disabled
+                sensor_data["pressure"] = round(bme280.pressure, 2)
             else:
-                sensor_data["humidity"] = None  # Humidity sensor disabled
-            sensor_data["pressure"] = round(bme280.pressure, 2)
+                # Sensor not available
+                sensor_data["temperature"] = None
+                sensor_data["humidity"] = None
+                sensor_data["pressure"] = None
             sensor_data["timestamp"] = time.time()
             sensor_data["error"] = None
         except Exception as e:
