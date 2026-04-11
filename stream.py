@@ -33,9 +33,16 @@ SERVER_PORT = 8000
 STREAM_FRAME_INTERVAL = 0.05  # seconds
 SENSOR_FETCH_INTERVAL = 1000  # milliseconds
 
-picam2 = Picamera2()
-picam2.configure(picam2.create_video_configuration(main={"size": (1920, 1080)}))
-picam2.start()
+# Initialize camera with error handling
+picam2 = None
+try:
+    picam2 = Picamera2()
+    picam2.configure(picam2.create_video_configuration(main={"size": (CAMERA_WIDTH, CAMERA_HEIGHT)}))
+    picam2.start()
+    print("Camera initialized successfully")
+except Exception as e:
+    print(f"Warning: Could not initialize camera: {e}")
+    picam2 = None
 
 # Initialize I2C and BME280 only if enabled
 bme280 = None
@@ -167,6 +174,10 @@ class StreamingHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps(response).encode('utf-8'))
 
         elif parsed.path == '/stream.mjpg':
+            if picam2 is None:
+                self.send_error(503, "Camera not available")
+                return
+                
             self.send_response(200)
             self.send_header('Content-type', 'multipart/x-mixed-replace; boundary=frame')
             self.send_header('Cache-Control', 'no-cache')
