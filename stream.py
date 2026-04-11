@@ -18,6 +18,7 @@ CAMERA_WIDTH = 1296
 CAMERA_HEIGHT = 972
 
 # I2C and Sensor configuration
+HUMIDITY_SENSOR_ENABLED = False  # Humidity sensor disabled - hardware removed
 BME280_I2C_ADDRESS = 0x76
 SENSOR_UPDATE_INTERVAL = 2  # seconds
 
@@ -77,7 +78,10 @@ def update_sensor_loop():
     while True:
         try:
             sensor_data["temperature"] = round(bme280.temperature, 2)
-            sensor_data["humidity"] = round(bme280.humidity, 2)
+            if HUMIDITY_SENSOR_ENABLED:
+                sensor_data["humidity"] = round(bme280.humidity, 2)
+            else:
+                sensor_data["humidity"] = None  # Humidity sensor disabled
             sensor_data["pressure"] = round(bme280.pressure, 2)
             sensor_data["timestamp"] = time.time()
             sensor_data["error"] = None
