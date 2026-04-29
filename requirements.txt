@@ -1,6 +1,9 @@
-adafruit-circuitpython-bme280
-adafruit-blinka
+picamera2
 pillow
+gpiozero
+mpu6050
+adafruit-blinka
 adafruit-circuitpython-motor
-adafruit-circuitpython-hcsr04
+adafruit-circuitpython-pca9685
+adafruit-circuitpython-bme280
 adafruit-circuitpython-ads1x15
