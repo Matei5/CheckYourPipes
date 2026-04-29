@@ -164,7 +164,7 @@ def update_sensor_loop():
     
     bme280_sensor = None
     try:
-    bme280_sensor = Adafruit_BME280_I2C(i2c, address=BME280_ADDR)
+        bme280_sensor = Adafruit_BME280_I2C(i2c, address=BME280_ADDR)
     except Exception as e:
         print(f"Warning: Could not initialize BME280 sensor: {e}")
     
