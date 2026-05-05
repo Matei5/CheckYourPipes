@@ -199,71 +199,122 @@
             transition: all 0.3s ease;
         }
         
-        #joystick-base {
-            border-radius: 50%;
-            background: rgba(59, 130, 246, 0.15);
-            border: 3px solid rgba(59, 130, 246, 0.4);
-            position: relative;
+        #directional-pad {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(59, 130, 246, 0.4);
             touch-action: none;
-            transition: all 0.3s ease;
         }
         
-        #joystick-container.size-small #joystick-base {
-            width: 80px;
-            height: 80px;
+        #joystick-container.size-small #directional-pad {
+            grid-template-columns: repeat(3, 30px);
+            gap: 2px;
+            padding: 4px;
         }
         
-        #joystick-container.size-medium #joystick-base {
-            width: 110px;
-            height: 110px;
+        #joystick-container.size-medium #directional-pad {
+            grid-template-columns: repeat(3, 45px);
+            gap: 4px;
+            padding: 8px;
         }
         
-        #joystick-container.size-large #joystick-base {
-            width: 140px;
-            height: 140px;
+        #joystick-container.size-large #directional-pad {
+            grid-template-columns: repeat(3, 60px);
+            gap: 6px;
+            padding: 12px;
         }
         
-        #joystick-stick {
-            border-radius: 50%;
-            background: rgba(59, 130, 246, 0.9);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            cursor: grab;
+        .dir-btn {
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.3);
+            border: 2px solid rgba(59, 130, 246, 0.5);
+            color: white;
+            cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            color: white;
-            transition: box-shadow 0.1s ease;
+            transition: all 0.1s ease;
+            touch-action: none;
+            user-select: none;
         }
         
-        #joystick-container.size-small #joystick-stick {
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
+        #joystick-container.size-small .dir-btn {
+            font-size: 12px;
+            padding: 4px;
         }
         
-        #joystick-container.size-medium #joystick-stick {
-            width: 55px;
-            height: 55px;
-            font-size: 20px;
+        #joystick-container.size-medium .dir-btn {
+            font-size: 14px;
+            padding: 6px;
         }
         
-        #joystick-container.size-large #joystick-stick {
-            width: 70px;
-            height: 70px;
-            font-size: 24px;
+        #joystick-container.size-large .dir-btn {
+            font-size: 16px;
+            padding: 8px;
         }
         
-        #joystick-stick:hover {
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+        .dir-btn:hover {
+            background: rgba(59, 130, 246, 0.5);
+            border-color: rgba(59, 130, 246, 0.8);
         }
         
-        #joystick-stick.active {
-            cursor: grabbing;
+        .dir-btn.active {
+            background: rgba(59, 130, 246, 0.9);
+            border-color: rgba(59, 130, 246, 1);
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+        }
+        
+        .dir-btn-spacer {
+            pointer-events: none;
+        }
+        
+        #dir-forward {
+            grid-column: 2;
+            grid-row: 1;
+        }
+        
+        #dir-left {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        #dir-right {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        #dir-back {
+            grid-column: 2;
+            grid-row: 3;
+        }
+        
+        #dir-forward-left {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        
+        #dir-forward-right {
+            grid-column: 3;
+            grid-row: 1;
+        }
+        
+        #dir-back-left {
+            grid-column: 1;
+            grid-row: 3;
+        }
+        
+        #dir-back-right {
+            grid-column: 3;
+            grid-row: 3;
+        }
+        
+        #dir-center {
+            display: none;
         }
     </style>
 </head>
@@ -299,8 +350,18 @@
     </div>
     
     <div id="joystick-container">
-        <div id="joystick-base">
-            <div id="joystick-stick"></div>
+        <div id="directional-pad">
+            <button class="dir-btn" id="dir-forward-left">↖</button>
+            <button class="dir-btn" id="dir-forward">↑</button>
+            <button class="dir-btn" id="dir-forward-right">↗</button>
+            
+            <button class="dir-btn" id="dir-left">←</button>
+            <button class="dir-btn dir-btn-spacer" id="dir-center">●</button>
+            <button class="dir-btn" id="dir-right">→</button>
+            
+            <button class="dir-btn" id="dir-back-left">↙</button>
+            <button class="dir-btn" id="dir-back">↓</button>
+            <button class="dir-btn" id="dir-back-right">↘</button>
         </div>
     </div>
 

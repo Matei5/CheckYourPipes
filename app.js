@@ -1,14 +1,19 @@
 // Sensor panel state
 const sensorPanel = document.getElementById('sensor-panel');
 const sensorToggle = document.getElementById('sensor-toggle');
-const joystickContainer = document.getElementById('joystick-container');
+const directionalPad = document.getElementById('directional-pad');
 const sizeButtons = document.querySelectorAll('.size-btn');
 
-// Sensitivity settings for each size
-const sensitivitySettings = {
-    small: { maxDistance: 20, deadZone: 4 },
-    medium: { maxDistance: 27, deadZone: 6 },
-    large: { maxDistance: 35, deadZone: 8 }
+// Command mapping for directional buttons
+const buttonCommandMap = {
+    'dir-forward': 'forward',
+    'dir-back': 'back',
+    'dir-left': 'left',
+    'dir-right': 'right',
+    'dir-forward-left': 'forward',
+    'dir-forward-right': 'forward',
+    'dir-back-left': 'back',
+    'dir-back-right': 'back',
 };
 
 // Load saved size from localStorage or default to medium
@@ -17,8 +22,8 @@ let currentSize = localStorage.getItem('sensorSize') || 'medium';
 // Apply saved size on load
 sensorPanel.classList.remove('size-small', 'size-medium', 'size-large');
 sensorPanel.classList.add('size-' + currentSize);
-joystickContainer.classList.remove('size-small', 'size-medium', 'size-large');
-joystickContainer.classList.add('size-' + currentSize);
+document.getElementById('joystick-container').classList.remove('size-small', 'size-medium', 'size-large');
+document.getElementById('joystick-container').classList.add('size-' + currentSize);
 sizeButtons.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.size == currentSize);
 });
@@ -41,12 +46,9 @@ sizeButtons.forEach(btn => {
         sensorPanel.classList.remove('size-small', 'size-medium', 'size-large');
         sensorPanel.classList.add('size-' + newSize);
         
-        // Update joystick size
-        joystickContainer.classList.remove('size-small', 'size-medium', 'size-large');
-        joystickContainer.classList.add('size-' + newSize);
-        
-        // Update joystick sensitivity
-        updateJoystickSensitivity(newSize);
+        // Update directional pad size
+        document.getElementById('joystick-container').classList.remove('size-small', 'size-medium', 'size-large');
+        document.getElementById('joystick-container').classList.add('size-' + newSize);
         
         // Save to localStorage
         localStorage.setItem('sensorSize', newSize);
@@ -54,146 +56,127 @@ sizeButtons.forEach(btn => {
     });
 });
 
-// Joystick state
-const joystickState = {
+// Directional pad state
+const padState = {
     isDragging: false,
     lastCommand: 'stop',
-    x: 0,
-    y: 0,
-    animationFrameId: null
+    currentButton: null,
+    startX: 0,
+    startY: 0
 };
 
-const stick = document.getElementById('joystick-stick');
-const base = document.getElementById('joystick-base');
+// Get all directional buttons
+const dirButtons = document.querySelectorAll('.dir-btn:not(.dir-btn-spacer)');
 
-// Initialize sensitivity based on current size
-let maxDistance = sensitivitySettings[currentSize].maxDistance;
-let deadZone = sensitivitySettings[currentSize].deadZone;
-
-// Function to update joystick sensitivity
-function updateJoystickSensitivity(size) {
-    maxDistance = sensitivitySettings[size].maxDistance;
-    deadZone = sensitivitySettings[size].deadZone;
+// Function to get command from button ID
+function getCommand(buttonId) {
+    return buttonCommandMap[buttonId] || 'stop';
 }
 
-function getBaseRect() {
-    return base.getBoundingClientRect();
-}
-
-function getAngleAndDistance(x, y) {
-    const rect = getBaseRect();
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const dx = x - centerX;
-    const dy = y - centerY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const angle = Math.atan2(dy, dx);
-    return { dx, dy, distance, angle };
-}
-
-function determineCommand(dx, dy, distance) {
-    if (distance < deadZone) return 'stop';
-    
-    const angle = Math.atan2(dy, dx);
-    const normalizedAngle = (angle + Math.PI) / (2 * Math.PI) * 360;
-    
-    if (normalizedAngle < 45 || normalizedAngle >= 315) return 'right';
-    if (normalizedAngle >= 45 && normalizedAngle < 135) return 'forward';
-    if (normalizedAngle >= 135 && normalizedAngle < 225) return 'left';
-    if (normalizedAngle >= 225 && normalizedAngle < 315) return 'back';
-    
-    return 'stop';
-}
-
-function updateStickPosition(x, y) {
-    const rect = getBaseRect();
-    const localX = x - rect.left;
-    const localY = y - rect.top;
-    const angleAndDistance = getAngleAndDistance(localX, localY);
-    const distance = angleAndDistance.distance;
-    const constrainedDistance = Math.min(distance, maxDistance);
-    const angle = angleAndDistance.angle;
-    const offsetX = Math.cos(angle) * constrainedDistance;
-    const offsetY = Math.sin(angle) * constrainedDistance;
-    
-    joystickState.x = offsetX;
-    joystickState.y = offsetY;
-    
-    stick.style.transform = 'translate(calc(-50% + ' + offsetX + 'px), calc(-50% + ' + offsetY + 'px))';
-    
-    const command = determineCommand(offsetX, offsetY, constrainedDistance);
-    if (command != joystickState.lastCommand) {
-        joystickState.lastCommand = command;
-        sendCmd(command);
+// Function to activate a button
+function activateButton(button) {
+    if (padState.currentButton && padState.currentButton !== button) {
+        padState.currentButton.classList.remove('active');
     }
-}
-
-function springBack() {
-    const springStrength = 0.15;
-    const friction = 0.92;
     
-    function animate() {
-        joystickState.x *= friction;
-        joystickState.y *= friction;
-        
-        stick.style.transform = 'translate(calc(-50% + ' + joystickState.x + 'px), calc(-50% + ' + joystickState.y + 'px))';
-        
-        if (Math.abs(joystickState.x) > 0.5 || Math.abs(joystickState.y) > 0.5) {
-            joystickState.animationFrameId = requestAnimationFrame(animate);
-        } else {
-            joystickState.x = 0;
-            joystickState.y = 0;
-            stick.style.transform = 'translate(-50%, -50%)';
-            joystickState.lastCommand = 'stop';
-            sendCmd('stop');
+    if (button) {
+        button.classList.add('active');
+        const command = getCommand(button.id);
+        if (command !== padState.lastCommand) {
+            padState.lastCommand = command;
+            sendCmd(command);
         }
+        padState.currentButton = button;
     }
-    
-    if (joystickState.animationFrameId) {
-        cancelAnimationFrame(joystickState.animationFrameId);
+}
+
+// Function to deactivate all buttons
+function deactivateAll() {
+    if (padState.currentButton) {
+        padState.currentButton.classList.remove('active');
+        padState.currentButton = null;
     }
-    animate();
+    if (padState.lastCommand !== 'stop') {
+        padState.lastCommand = 'stop';
+        sendCmd('stop');
+    }
+}
+
+// Function to find button at coordinates
+function getButtonAtCoordinates(clientX, clientY) {
+    return dirButtons.find(btn => {
+        const rect = btn.getBoundingClientRect();
+        return clientX >= rect.left && clientX <= rect.right &&
+               clientY >= rect.top && clientY <= rect.bottom;
+    });
 }
 
 // Touch events
-base.addEventListener('touchstart', (e) => {
-    joystickState.isDragging = true;
-    stick.classList.add('active');
+directionalPad.addEventListener('touchstart', (e) => {
+    padState.isDragging = true;
     const touch = e.touches[0];
-    updateStickPosition(touch.clientX, touch.clientY);
+    padState.startX = touch.clientX;
+    padState.startY = touch.clientY;
+    
+    const button = getButtonAtCoordinates(touch.clientX, touch.clientY);
+    if (button) {
+        activateButton(button);
+    }
     e.preventDefault();
-});
+}, false);
 
 document.addEventListener('touchmove', (e) => {
-    if (!joystickState.isDragging) return;
+    if (!padState.isDragging) return;
     const touch = e.touches[0];
-    updateStickPosition(touch.clientX, touch.clientY);
+    
+    const button = getButtonAtCoordinates(touch.clientX, touch.clientY);
+    if (button) {
+        activateButton(button);
+    } else {
+        deactivateAll();
+    }
     e.preventDefault();
-});
+}, false);
 
 document.addEventListener('touchend', () => {
-    if (!joystickState.isDragging) return;
-    joystickState.isDragging = false;
-    stick.classList.remove('active');
-    springBack();
-});
+    if (!padState.isDragging) return;
+    padState.isDragging = false;
+    deactivateAll();
+}, false);
 
 // Mouse events
-stick.addEventListener('mousedown', () => {
-    joystickState.isDragging = true;
-    stick.classList.add('active');
+directionalPad.addEventListener('mousedown', (e) => {
+    padState.isDragging = true;
+    padState.startX = e.clientX;
+    padState.startY = e.clientY;
+    
+    const button = getButtonAtCoordinates(e.clientX, e.clientY);
+    if (button) {
+        activateButton(button);
+    }
 });
 
 document.addEventListener('mousemove', (e) => {
-    if (!joystickState.isDragging) return;
-    updateStickPosition(e.clientX, e.clientY);
+    if (!padState.isDragging) return;
+    
+    const button = getButtonAtCoordinates(e.clientX, e.clientY);
+    if (button) {
+        activateButton(button);
+    } else {
+        deactivateAll();
+    }
 });
 
 document.addEventListener('mouseup', () => {
-    if (!joystickState.isDragging) return;
-    joystickState.isDragging = false;
-    stick.classList.remove('active');
-    springBack();
+    if (!padState.isDragging) return;
+    padState.isDragging = false;
+    deactivateAll();
+});
+
+// Prevent context menu on long press
+directionalPad.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    return false;
 });
 
 async function updateSensor() {
