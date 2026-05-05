@@ -1,20 +1,16 @@
-// Sensor panel state
 const sensorPanel = document.getElementById('sensor-panel');
 const sensorToggle = document.getElementById('sensor-toggle');
 const joystickContainer = document.getElementById('joystick-container');
 const sizeButtons = document.querySelectorAll('.size-btn');
 
-// Sensitivity settings for each size
 const sensitivitySettings = {
     small: { maxDistance: 20, deadZone: 4 },
     medium: { maxDistance: 27, deadZone: 6 },
     large: { maxDistance: 35, deadZone: 8 }
 };
 
-// Load saved size from localStorage or default to medium
 let currentSize = localStorage.getItem('sensorSize') || 'medium';
 
-// Apply saved size on load
 sensorPanel.classList.remove('size-small', 'size-medium', 'size-large');
 sensorPanel.classList.add('size-' + currentSize);
 joystickContainer.classList.remove('size-small', 'size-medium', 'size-large');
@@ -23,54 +19,47 @@ sizeButtons.forEach(btn => {
     btn.classList.toggle('active', btn.dataset.size == currentSize);
 });
 
-// Toggle panel open/close
 sensorToggle.addEventListener('click', () => {
     sensorPanel.classList.toggle('collapsed');
 });
 
-// Size button handlers
 sizeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
         const newSize = btn.dataset.size;
         
-        // Update active button
         sizeButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         
-        // Update panel size
         sensorPanel.classList.remove('size-small', 'size-medium', 'size-large');
         sensorPanel.classList.add('size-' + newSize);
         
-        // Update joystick size
         joystickContainer.classList.remove('size-small', 'size-medium', 'size-large');
         joystickContainer.classList.add('size-' + newSize);
         
-        // Update joystick sensitivity
         updateJoystickSensitivity(newSize);
         
-        // Save to localStorage
         localStorage.setItem('sensorSize', newSize);
         currentSize = newSize;
     });
 });
 
-// Joystick state
 const joystickState = {
     isDragging: false,
-    lastCommand: 'stop',
+    lastCommand: null,
+    lastThrottle: 0,
+    lastTurn: 0,
     x: 0,
     y: 0,
-    animationFrameId: null
+    animationFrameId: null,
+    updateIntervalId: null
 };
 
 const stick = document.getElementById('joystick-stick');
 const base = document.getElementById('joystick-base');
 
-// Initialize sensitivity based on current size
 let maxDistance = sensitivitySettings[currentSize].maxDistance;
 let deadZone = sensitivitySettings[currentSize].deadZone;
 
-// Function to update joystick sensitivity
 function updateJoystickSensitivity(size) {
     maxDistance = sensitivitySettings[size].maxDistance;
     deadZone = sensitivitySettings[size].deadZone;
@@ -91,18 +80,36 @@ function getAngleAndDistance(x, y) {
     return { dx, dy, distance, angle };
 }
 
-function determineCommand(dx, dy, distance) {
-    if (distance < deadZone) return 'stop';
+function getThrottleAndTurn(dx, dy, distance) {
+    // Returns { throttle: 0-1, turn: -1 to 1 (for forward/back), command: 'forward'|'back'|'left'|'right'|null }
+    if (distance < deadZone) {
+        return { throttle: 0, turn: 0, command: null };
+    }
+    
+    // Normalize throttle (0 to 1 based on distance)
+    const throttle = Math.min(1.0, distance / maxDistance);
     
     const angle = Math.atan2(dy, dx);
     const normalizedAngle = (angle + Math.PI) / (2 * Math.PI) * 360;
     
-    if (normalizedAngle < 45 || normalizedAngle >= 315) return 'right';
-    if (normalizedAngle >= 45 && normalizedAngle < 135) return 'forward';
-    if (normalizedAngle >= 135 && normalizedAngle < 225) return 'left';
-    if (normalizedAngle >= 225 && normalizedAngle < 315) return 'back';
+    let command = null;
+    let turn = 0;
     
-    return 'stop';
+    if (normalizedAngle < 45 || normalizedAngle >= 315) {
+        command = 'right';
+    } else if (normalizedAngle >= 45 && normalizedAngle < 135) {
+        command = 'forward';
+        turn = dx / (maxDistance * 0.7);
+        turn = Math.max(-1, Math.min(1, turn));
+    } else if (normalizedAngle >= 135 && normalizedAngle < 225) {
+        command = 'left';
+    } else if (normalizedAngle >= 225 && normalizedAngle < 315) {
+        command = 'back';
+        turn = dx / (maxDistance * 0.7);
+        turn = Math.max(-1, Math.min(1, turn));
+    }
+    
+    return { throttle, turn, command };
 }
 
 function updateStickPosition(x, y) {
@@ -121,11 +128,10 @@ function updateStickPosition(x, y) {
     
     stick.style.transform = 'translate(calc(-50% + ' + offsetX + 'px), calc(-50% + ' + offsetY + 'px))';
     
-    const command = determineCommand(offsetX, offsetY, constrainedDistance);
-    if (command != joystickState.lastCommand) {
-        joystickState.lastCommand = command;
-        sendCmd(command);
-    }
+    const { throttle, turn, command } = getThrottleAndTurn(offsetX, offsetY, constrainedDistance);
+    joystickState.lastThrottle = throttle;
+    joystickState.lastTurn = turn;
+    joystickState.lastCommand = command;
 }
 
 function springBack() {
@@ -144,8 +150,10 @@ function springBack() {
             joystickState.x = 0;
             joystickState.y = 0;
             stick.style.transform = 'translate(-50%, -50%)';
-            joystickState.lastCommand = 'stop';
-            sendCmd('stop');
+            joystickState.lastCommand = null;
+            joystickState.lastThrottle = 0;
+            joystickState.lastTurn = 0;
+            sendCmd('stop', 0, 0);
         }
     }
     
@@ -155,12 +163,32 @@ function springBack() {
     animate();
 }
 
-// Touch events
+function startJoystickUpdates() {
+    if (joystickState.updateIntervalId) {
+        clearInterval(joystickState.updateIntervalId);
+    }
+    joystickState.updateIntervalId = setInterval(() => {
+        if (joystickState.lastCommand) {
+            sendCmd(joystickState.lastCommand, joystickState.lastThrottle, joystickState.lastTurn);
+        } else {
+            sendCmd('stop', 0, 0);
+        }
+    }, 50);
+}
+
+function stopJoystickUpdates() {
+    if (joystickState.updateIntervalId) {
+        clearInterval(joystickState.updateIntervalId);
+        joystickState.updateIntervalId = null;
+    }
+}
+
 base.addEventListener('touchstart', (e) => {
     joystickState.isDragging = true;
     stick.classList.add('active');
     const touch = e.touches[0];
     updateStickPosition(touch.clientX, touch.clientY);
+    startJoystickUpdates();
     e.preventDefault();
 });
 
@@ -175,13 +203,14 @@ document.addEventListener('touchend', () => {
     if (!joystickState.isDragging) return;
     joystickState.isDragging = false;
     stick.classList.remove('active');
+    stopJoystickUpdates();
     springBack();
 });
 
-// Mouse events
 stick.addEventListener('mousedown', () => {
     joystickState.isDragging = true;
     stick.classList.add('active');
+    startJoystickUpdates();
 });
 
 document.addEventListener('mousemove', (e) => {
@@ -193,6 +222,7 @@ document.addEventListener('mouseup', () => {
     if (!joystickState.isDragging) return;
     joystickState.isDragging = false;
     stick.classList.remove('active');
+    stopJoystickUpdates();
     springBack();
 });
 
@@ -227,9 +257,16 @@ async function updateSensor() {
     }
 }
 
-async function sendCmd(cmd) {
+async function sendCmd(cmd, throttle = null, turn = null) {
     try {
-        await fetch('/control?cmd=' + encodeURIComponent(cmd));
+        let url = '/control?cmd=' + encodeURIComponent(cmd);
+        if (throttle !== null) {
+            url += '&throttle=' + encodeURIComponent(throttle.toFixed(2));
+        }
+        if (turn !== null && turn !== 0) {
+            url += '&turn=' + encodeURIComponent(turn.toFixed(2));
+        }
+        await fetch(url);
     } catch (err) {
         console.error('Command failed:', err);
     }
@@ -237,25 +274,24 @@ async function sendCmd(cmd) {
 
 document.addEventListener('keydown', function(event) {
     const key = event.key.toLowerCase();
-    if (key == 'w') sendCmd('forward');
-    else if (key == 's') sendCmd('back');
-    else if (key == 'a') sendCmd('left');
-    else if (key == 'd') sendCmd('right');
+    if (key == 'w') sendCmd('forward', 1.0, 0);
+    else if (key == 's') sendCmd('back', 1.0, 0);
+    else if (key == 'a') sendCmd('left', 1.0, 0);
+    else if (key == 'd') sendCmd('right', 1.0, 0);
     else if (key == ' ') {
         event.preventDefault();
-        sendCmd('stop');
+        sendCmd('stop', 0, 0);
     }
 });
 
 document.addEventListener('keyup', function(event) {
     const key = event.key.toLowerCase();
     if (key == 'w' || key == 's' || key == 'a' || key == 'd') {
-        sendCmd('stop');
+        sendCmd('stop', 0, 0);
     }
 });
 
-// Read from config
-const SENSOR_FETCH_INTERVAL = 1000; // milliseconds
+const SENSOR_FETCH_INTERVAL_MS = 1000;
 
 updateSensor();
-setInterval(updateSensor, SENSOR_FETCH_INTERVAL);
+setInterval(updateSensor, SENSOR_FETCH_INTERVAL_MS);

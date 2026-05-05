@@ -30,13 +30,13 @@ CAMERA_HEIGHT = 972
 
 HUMIDITY_SENSOR_ENABLED = False
 BME280_I2C_ADDRESS = 0x76
-SENSOR_UPDATE_INTERVAL = 2  # seconds
+SENSOR_UPDATE_INTERVAL_S = 2
 
 SERVER_HOST = '0.0.0.0'
 SERVER_PORT = 8000
 
-STREAM_FRAME_INTERVAL = 0.05  # seconds
-SENSOR_FETCH_INTERVAL = 1000  # milliseconds
+STREAM_FRAME_INTERVAL_S = 0.05
+SENSOR_FETCH_INTERVAL_MS = 1000
 
 MPU6050_ADDR = 0x68
 BME280_ADDR = 0x77
@@ -116,44 +116,69 @@ sensor_data = {
     "motor_speed": motor_speed,
 }
 
-def set_command(cmd):
+def set_command(cmd, throttle=None, turn=None):
     global motor_direction, motor_speed
     
     if not motors:
         print("Warning: Motors not initialized")
         return
     
-    if cmd == CMD_FORWARD:
-        for m in motors:
-            m.throttle = MOTOR_THROTTLE_FORWARD
-        motor_direction = CMD_FORWARD
-        motor_speed = STANDARD_SPEED
-    elif cmd == CMD_STOP:
+    if throttle is None:
+        throttle = STANDARD_SPEED / 100.0
+    else:
+        throttle = max(0.0, min(1.0, throttle))
+    
+    if cmd == CMD_STOP or throttle == 0:
         for m in motors:
             m.throttle = MOTOR_THROTTLE_STOP
         motor_direction = CMD_STOP
         motor_speed = 0
+    elif cmd == CMD_FORWARD:
+        if turn is not None and len(motors) >= 4:
+            turn = max(-1.0, min(1.0, turn))
+            left_throttle = throttle * (1.0 + turn)
+            right_throttle = throttle * (1.0 - turn)
+            motors[0].throttle = left_throttle
+            motors[1].throttle = right_throttle
+            motors[2].throttle = left_throttle
+            motors[3].throttle = right_throttle
+            motor_speed = int(throttle * 100)
+        else:
+            for m in motors:
+                m.throttle = throttle
+            motor_speed = int(throttle * 100)
+        motor_direction = CMD_FORWARD
+    elif cmd == CMD_BACKWARD:
+        if turn is not None and len(motors) >= 4:
+            turn = max(-1.0, min(1.0, turn))
+            left_throttle = -throttle * (1.0 + turn)
+            right_throttle = -throttle * (1.0 - turn)
+            motors[0].throttle = left_throttle
+            motors[1].throttle = right_throttle
+            motors[2].throttle = left_throttle
+            motors[3].throttle = right_throttle
+            motor_speed = int(throttle * 100)
+        else:
+            for m in motors:
+                m.throttle = -throttle
+            motor_speed = int(throttle * 100)
+        motor_direction = CMD_BACKWARD
     elif cmd == CMD_LEFT:
         if len(motors) >= 4:
-            motors[0].throttle = MOTOR_THROTTLE_BACKWARD
-            motors[1].throttle = MOTOR_THROTTLE_FORWARD
-            motors[2].throttle = MOTOR_THROTTLE_BACKWARD
-            motors[3].throttle = MOTOR_THROTTLE_FORWARD
+            motors[0].throttle = -throttle
+            motors[1].throttle = throttle
+            motors[2].throttle = -throttle
+            motors[3].throttle = throttle
         motor_direction = CMD_LEFT
-        motor_speed = STANDARD_SPEED
+        motor_speed = int(throttle * 100)
     elif cmd == CMD_RIGHT:
         if len(motors) >= 4:
-            motors[0].throttle = MOTOR_THROTTLE_FORWARD
-            motors[1].throttle = MOTOR_THROTTLE_BACKWARD
-            motors[2].throttle = MOTOR_THROTTLE_FORWARD
-            motors[3].throttle = MOTOR_THROTTLE_BACKWARD
+            motors[0].throttle = throttle
+            motors[1].throttle = -throttle
+            motors[2].throttle = throttle
+            motors[3].throttle = -throttle
         motor_direction = CMD_RIGHT
-        motor_speed = STANDARD_SPEED
-    elif cmd == CMD_BACKWARD:
-        for m in motors:
-            m.throttle = MOTOR_THROTTLE_BACKWARD
-        motor_direction = CMD_BACKWARD
-        motor_speed = STANDARD_SPEED
+        motor_speed = int(throttle * 100)
     
     sensor_data["motor_direction"] = motor_direction
     sensor_data["motor_speed"] = motor_speed
@@ -183,7 +208,7 @@ def update_sensor_loop():
             sensor_data["error"] = None
         except Exception as e:
             sensor_data["error"] = str(e)
-        time.sleep(SENSOR_UPDATE_INTERVAL)
+        time.sleep(SENSOR_UPDATE_INTERVAL_S)
 
 
 threading.Thread(target=update_sensor_loop, daemon=True).start()
@@ -228,11 +253,26 @@ class StreamingHandler(BaseHTTPRequestHandler):
         elif parsed.path == PATH_CONTROL:
             query = parse_qs(parsed.query)
             cmd = query.get(QUERY_PARAM_CMD, [''])[0].lower()
+            
+            throttle = None
+            turn = None
+            try:
+                throttle_str = query.get('throttle', [''])[0]
+                if throttle_str:
+                    throttle = float(throttle_str)
+            except (ValueError, IndexError):
+                pass
+            try:
+                turn_str = query.get('turn', [''])[0]
+                if turn_str:
+                    turn = float(turn_str)
+            except (ValueError, IndexError):
+                pass
 
             allowed = {CMD_FORWARD, CMD_BACKWARD, CMD_LEFT, CMD_RIGHT, CMD_STOP}
 
             if cmd in allowed:
-                set_command(cmd)
+                set_command(cmd, throttle, turn)
                 response = {
                     "ok": True,
                     "command": cmd,
@@ -274,7 +314,7 @@ class StreamingHandler(BaseHTTPRequestHandler):
                     self.wfile.write(b"Content-Type: image/jpeg\r\n\r\n")
                     self.wfile.write(buffer.getvalue())
                     self.wfile.write(b"\r\n")
-                    time.sleep(STREAM_FRAME_INTERVAL)
+                    time.sleep(STREAM_FRAME_INTERVAL_S)
             except BrokenPipeError:
                 pass
             except ConnectionResetError:
