@@ -230,6 +230,13 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
+document.addEventListener('keyup', function(event) {
+    const key = event.key.toLowerCase();
+    if (['w', 'a', 's', 'd'].includes(key)) {
+        sendCmd('stop');
+    }
+});
+
 // Read from config
 const SENSOR_FETCH_INTERVAL = 1000; // milliseconds
 
