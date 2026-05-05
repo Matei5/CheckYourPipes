@@ -136,8 +136,9 @@ def set_command(cmd, throttle=None, turn=None):
     elif cmd == CMD_FORWARD:
         if turn is not None and len(motors) >= 4:
             turn = max(-1.0, min(1.0, turn))
-            left_throttle = throttle * (1.0 + turn)
-            right_throttle = throttle * (1.0 - turn)
+            adjusted_turn = turn * (1.0 - throttle)
+            left_throttle = throttle + adjusted_turn
+            right_throttle = throttle - adjusted_turn
             motors[0].throttle = left_throttle
             motors[1].throttle = right_throttle
             motors[2].throttle = left_throttle
@@ -151,8 +152,9 @@ def set_command(cmd, throttle=None, turn=None):
     elif cmd == CMD_BACKWARD:
         if turn is not None and len(motors) >= 4:
             turn = max(-1.0, min(1.0, turn))
-            left_throttle = -throttle * (1.0 + turn)
-            right_throttle = -throttle * (1.0 - turn)
+            adjusted_turn = turn * (1.0 - throttle)
+            left_throttle = -throttle + adjusted_turn
+            right_throttle = -throttle - adjusted_turn
             motors[0].throttle = left_throttle
             motors[1].throttle = right_throttle
             motors[2].throttle = left_throttle
