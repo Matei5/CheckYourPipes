@@ -312,8 +312,8 @@ document.addEventListener('keydown', function(event) {
     const key = event.key.toLowerCase();
     if (key == 'w') sendCmd('forward', 1.0, 0);
     else if (key == 's') sendCmd('back', 1.0, 0);
-    else if (key == 'a') sendCmd('left', 1.0, 0);
-    else if (key == 'd') sendCmd('right', 1.0, 0);
+    else if (key == 'a') sendCmd('right', 1.0, 0);
+    else if (key == 'd') sendCmd('left', 1.0, 0);
     else if (key == ' ') {
         event.preventDefault();
         sendCmd('stop', 0, 0);
