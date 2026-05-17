@@ -237,7 +237,7 @@ async function updateSensor() {
             return;
         }
 
-        panel.innerHTML = `
+        let html = `
             <div class="sensor-item">
                 <div class="sensor-label">Temperature</div>
                 <div class="sensor-value">${data.temperature ?? '--'} °C</div>
@@ -251,6 +251,42 @@ async function updateSensor() {
                 <div class="sensor-value">${data.pressure ?? '--'} hPa</div>
             </div>
         `;
+
+        if (data.acceleration) {
+            html += `
+            <div class="sensor-item">
+                <div class="sensor-label">Accel X</div>
+                <div class="sensor-value">${data.acceleration.x ?? '--'} m/s²</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Accel Y</div>
+                <div class="sensor-value">${data.acceleration.y ?? '--'} m/s²</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Accel Z</div>
+                <div class="sensor-value">${data.acceleration.z ?? '--'} m/s²</div>
+            </div>
+            `;
+        }
+
+        if (data.gyroscope) {
+            html += `
+            <div class="sensor-item">
+                <div class="sensor-label">Gyro X</div>
+                <div class="sensor-value">${data.gyroscope.x ?? '--'} rad/s</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Gyro Y</div>
+                <div class="sensor-value">${data.gyroscope.y ?? '--'} rad/s</div>
+            </div>
+            <div class="sensor-item">
+                <div class="sensor-label">Gyro Z</div>
+                <div class="sensor-value">${data.gyroscope.z ?? '--'} rad/s</div>
+            </div>
+            `;
+        }
+
+        panel.innerHTML = html;
     } catch (err) {
         document.getElementById('sensor-status').innerHTML =
             '<div class="sensor-item"><div class="sensor-label">Error</div><div class="sensor-value sensor-error">Load Failed</div></div>';
