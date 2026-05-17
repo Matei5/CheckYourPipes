@@ -142,15 +142,15 @@ def set_command(cmd, throttle=None, turn=None):
             adjusted_turn = turn * (1.0 - throttle)
             left_throttle = -throttle - adjusted_turn
             right_throttle = -throttle + adjusted_turn
-            motors[0].throttle = left_throttle * 0.85
+            motors[0].throttle = left_throttle * 0.70
             motors[1].throttle = right_throttle
-            motors[2].throttle = left_throttle * 0.85
+            motors[2].throttle = left_throttle * 0.70
             motors[3].throttle = right_throttle
             motor_speed = int(throttle * 100)
         else:
-            motors[0].throttle = -throttle * 0.85
+            motors[0].throttle = -throttle * 0.70
             motors[1].throttle = -throttle
-            motors[2].throttle = -throttle * 0.85
+            motors[2].throttle = -throttle * 0.70
             motors[3].throttle = -throttle
             motor_speed = int(throttle * 100)
         motor_direction = CMD_FORWARD
