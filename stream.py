@@ -170,18 +170,18 @@ def set_command(cmd, throttle=None, turn=None):
         motor_direction = CMD_BACKWARD
     elif cmd == CMD_LEFT:
         if len(motors) >= 4:
-            motors[0].throttle = throttle
-            motors[1].throttle = -throttle
-            motors[2].throttle = throttle
-            motors[3].throttle = -throttle
-        motor_direction = CMD_LEFT
-        motor_speed = int(throttle * 100)
-    elif cmd == CMD_RIGHT:
-        if len(motors) >= 4:
             motors[0].throttle = -throttle
             motors[1].throttle = throttle
             motors[2].throttle = -throttle
             motors[3].throttle = throttle
+        motor_direction = CMD_LEFT
+        motor_speed = int(throttle * 100)
+    elif cmd == CMD_RIGHT:
+        if len(motors) >= 4:
+            motors[0].throttle = throttle
+            motors[1].throttle = -throttle
+            motors[2].throttle = throttle
+            motors[3].throttle = -throttle
         motor_direction = CMD_RIGHT
         motor_speed = int(throttle * 100)
     
