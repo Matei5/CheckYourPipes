@@ -308,14 +308,51 @@ async function sendCmd(cmd, throttle = null, turn = null) {
     }
 }
 
+// Track currently pressed keys
+const keysPressed = new Set();
+
+function updateMovement() {
+    const hasForward = keysPressed.has('w');
+    const hasBackward = keysPressed.has('s');
+    const hasLeft = keysPressed.has('a');
+    const hasRight = keysPressed.has('d');
+    
+    if (!hasForward && !hasBackward && !hasLeft && !hasRight) {
+        sendCmd('stop', 0, 0);
+        return;
+    }
+    
+    if (hasForward) {
+        if (hasLeft) {
+            sendCmd('forward', 1.0, -0.5);
+        } else if (hasRight) {
+            sendCmd('forward', 1.0, 0.5);
+        } else {
+            sendCmd('forward', 1.0, 0);
+        }
+    } else if (hasBackward) {
+        if (hasLeft) {
+            sendCmd('back', 1.0, -0.5);
+        } else if (hasRight) {
+            sendCmd('back', 1.0, 0.5);
+        } else {
+            sendCmd('back', 1.0, 0);
+        }
+    } else if (hasLeft) {
+        sendCmd('left', 1.0, 0);
+    } else if (hasRight) {
+        sendCmd('right', 1.0, 0);
+    }
+}
+
 document.addEventListener('keydown', function(event) {
     const key = event.key.toLowerCase();
-    if (key == 'w') sendCmd('forward', 1.0, 0);
-    else if (key == 's') sendCmd('back', 1.0, 0);
-    else if (key == 'a') sendCmd('right', 1.0, 0);
-    else if (key == 'd') sendCmd('left', 1.0, 0);
-    else if (key == ' ') {
+    if (key == 'w' || key == 's' || key == 'a' || key == 'd') {
+        keysPressed.add(key);
+        updateMovement();
+    } else if (key == ' ') {
         event.preventDefault();
+        keysPressed.clear();
         sendCmd('stop', 0, 0);
     }
 });
@@ -323,7 +360,8 @@ document.addEventListener('keydown', function(event) {
 document.addEventListener('keyup', function(event) {
     const key = event.key.toLowerCase();
     if (key == 'w' || key == 's' || key == 'a' || key == 'd') {
-        sendCmd('stop', 0, 0);
+        keysPressed.delete(key);
+        updateMovement();
     }
 });
 
