@@ -24,7 +24,7 @@ MOTOR_M4_IN1, MOTOR_M4_IN2 = 8, 9
 ULTRASONIC_TRIG = 23
 ULTRASONIC_ECHO = 24
 
-STANDARD_SPEED = 50
+STANDARD_SPEED = 5000
 
 CAMERA_WIDTH = 1296 
 CAMERA_HEIGHT = 972
@@ -45,8 +45,8 @@ MQ2_ADC_ADDR = 0x48
 PCA9685_ADDR = 0x5f
 
 PWM_FREQUENCY = 50
-MOTOR_THROTTLE_FORWARD = 0.5
-MOTOR_THROTTLE_BACKWARD = -0.5
+MOTOR_THROTTLE_FORWARD = 0.2
+MOTOR_THROTTLE_BACKWARD = -0.2
 MOTOR_THROTTLE_STOP = 0.0
 
 SENSOR_DECIMAL_PLACES = 2
@@ -140,24 +140,8 @@ def set_command(cmd, throttle=None, turn=None):
         if turn is not None and len(motors) >= 4:
             turn = max(-1.0, min(1.0, turn))
             adjusted_turn = turn * (1.0 - throttle)
-            left_throttle = -throttle - adjusted_turn
-            right_throttle = -throttle + adjusted_turn
-            motors[0].throttle = left_throttle
-            motors[1].throttle = right_throttle
-            motors[2].throttle = left_throttle
-            motors[3].throttle = right_throttle
-            motor_speed = int(throttle * 100)
-        else:
-            for m in motors:
-                m.throttle = -throttle
-            motor_speed = int(throttle * 100)
-        motor_direction = CMD_FORWARD
-    elif cmd == CMD_BACKWARD:
-        if turn is not None and len(motors) >= 4:
-            turn = max(-1.0, min(1.0, turn))
-            adjusted_turn = turn * (1.0 - throttle)
-            left_throttle = throttle - adjusted_turn
-            right_throttle = throttle + adjusted_turn
+            left_throttle = throttle + adjusted_turn
+            right_throttle = throttle - adjusted_turn
             motors[0].throttle = left_throttle
             motors[1].throttle = right_throttle
             motors[2].throttle = left_throttle
@@ -167,21 +151,37 @@ def set_command(cmd, throttle=None, turn=None):
             for m in motors:
                 m.throttle = throttle
             motor_speed = int(throttle * 100)
+        motor_direction = CMD_FORWARD
+    elif cmd == CMD_BACKWARD:
+        if turn is not None and len(motors) >= 4:
+            turn = max(-1.0, min(1.0, turn))
+            adjusted_turn = turn * (1.0 - throttle)
+            left_throttle = -throttle + adjusted_turn
+            right_throttle = -throttle - adjusted_turn
+            motors[0].throttle = left_throttle
+            motors[1].throttle = right_throttle
+            motors[2].throttle = left_throttle
+            motors[3].throttle = right_throttle
+            motor_speed = int(throttle * 100)
+        else:
+            for m in motors:
+                m.throttle = -throttle
+            motor_speed = int(throttle * 100)
         motor_direction = CMD_BACKWARD
     elif cmd == CMD_LEFT:
-        if len(motors) >= 4:
-            motors[0].throttle = throttle
-            motors[1].throttle = -throttle
-            motors[2].throttle = throttle
-            motors[3].throttle = -throttle
-        motor_direction = CMD_LEFT
-        motor_speed = int(throttle * 100)
-    elif cmd == CMD_RIGHT:
         if len(motors) >= 4:
             motors[0].throttle = -throttle
             motors[1].throttle = throttle
             motors[2].throttle = -throttle
             motors[3].throttle = throttle
+        motor_direction = CMD_LEFT
+        motor_speed = int(throttle * 100)
+    elif cmd == CMD_RIGHT:
+        if len(motors) >= 4:
+            motors[0].throttle = throttle
+            motors[1].throttle = -throttle
+            motors[2].throttle = throttle
+            motors[3].throttle = -throttle
         motor_direction = CMD_RIGHT
         motor_speed = int(throttle * 100)
     
