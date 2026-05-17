@@ -314,8 +314,8 @@ const keysPressed = new Set();
 function updateMovement() {
     const hasForward = keysPressed.has('w');
     const hasBackward = keysPressed.has('s');
-    const hasLeft = keysPressed.has('a');
-    const hasRight = keysPressed.has('d');
+    const hasRight = keysPressed.has('a');
+    const hasLeft = keysPressed.has('d');
     
     if (!hasForward && !hasBackward && !hasLeft && !hasRight) {
         sendCmd('stop', 0, 0);
