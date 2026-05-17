@@ -24,7 +24,7 @@ MOTOR_M4_IN1, MOTOR_M4_IN2 = 8, 9
 ULTRASONIC_TRIG = 23
 ULTRASONIC_ECHO = 24
 
-STANDARD_SPEED = 50
+STANDARD_SPEED = 25
 
 CAMERA_WIDTH = 1296 
 CAMERA_HEIGHT = 972
@@ -142,14 +142,16 @@ def set_command(cmd, throttle=None, turn=None):
             adjusted_turn = turn * (1.0 - throttle)
             left_throttle = -throttle - adjusted_turn
             right_throttle = -throttle + adjusted_turn
-            motors[0].throttle = left_throttle
+            motors[0].throttle = left_throttle * 0.95
             motors[1].throttle = right_throttle
-            motors[2].throttle = left_throttle
+            motors[2].throttle = left_throttle * 0.95
             motors[3].throttle = right_throttle
             motor_speed = int(throttle * 100)
         else:
-            for m in motors:
-                m.throttle = -throttle
+            motors[0].throttle = -throttle * 0.95
+            motors[1].throttle = -throttle
+            motors[2].throttle = -throttle * 0.95
+            motors[3].throttle = -throttle
             motor_speed = int(throttle * 100)
         motor_direction = CMD_FORWARD
     elif cmd == CMD_BACKWARD:
