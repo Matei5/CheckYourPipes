@@ -14,6 +14,7 @@ from board import SCL, SDA
 from adafruit_pca9685 import PCA9685
 from adafruit_motor import motor
 import adafruit_bme280.advanced
+import adafruit_mpu6050
 
 MOTOR_M1_IN1, MOTOR_M1_IN2 = 15, 14
 MOTOR_M2_IN1, MOTOR_M2_IN2 = 12, 13
@@ -110,6 +111,8 @@ sensor_data = {
     "temperature": None,
     "humidity": None,
     "pressure": None,
+    "acceleration": None,
+    "gyroscope": None,
     "timestamp": None,
     "error": None,
     "motor_direction": motor_direction,
@@ -195,6 +198,12 @@ def update_sensor_loop():
     except Exception as e:
         print(f"Warning: Could not initialize BME280 sensor: {e}")
     
+    mpu6050_sensor = None
+    try:
+        mpu6050_sensor = adafruit_mpu6050.MPU6050(i2c, address=MPU6050_ADDR)
+    except Exception as e:
+        print(f"Warning: Could not initialize MPU6050 sensor: {e}")
+    
     while True:
         try:
             if bme280_sensor is not None:
@@ -204,6 +213,21 @@ def update_sensor_loop():
                 else:
                     sensor_data["humidity"] = None
                 sensor_data["pressure"] = round(bme280_sensor.pressure, SENSOR_DECIMAL_PLACES)
+            
+            if mpu6050_sensor is not None:
+                accel = mpu6050_sensor.acceleration
+                gyro = mpu6050_sensor.gyro
+                sensor_data["acceleration"] = {
+                    "x": round(accel[0], SENSOR_DECIMAL_PLACES),
+                    "y": round(accel[1], SENSOR_DECIMAL_PLACES),
+                    "z": round(accel[2], SENSOR_DECIMAL_PLACES)
+                }
+                sensor_data["gyroscope"] = {
+                    "x": round(gyro[0], SENSOR_DECIMAL_PLACES),
+                    "y": round(gyro[1], SENSOR_DECIMAL_PLACES),
+                    "z": round(gyro[2], SENSOR_DECIMAL_PLACES)
+                }
+            
             sensor_data["motor_direction"] = motor_direction
             sensor_data["motor_speed"] = motor_speed
             sensor_data["timestamp"] = time.time()
