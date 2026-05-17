@@ -13,7 +13,7 @@ import busio
 from board import SCL, SDA
 from adafruit_pca9685 import PCA9685
 from adafruit_motor import motor
-import adafruit_bme280
+import adafruit_bme280.advanced
 
 MOTOR_M1_IN1, MOTOR_M1_IN2 = 15, 14
 MOTOR_M2_IN1, MOTOR_M2_IN2 = 12, 13
@@ -191,7 +191,7 @@ def update_sensor_loop():
     
     bme280_sensor = None
     try:
-        bme280_sensor = adafruit_bme280.Adafruit_BME280_I2C(i2c, address=BME280_ADDR)
+        bme280_sensor = adafruit_bme280.advanced.Adafruit_BME280_I2C(i2c, address=BME280_ADDR)
     except Exception as e:
         print(f"Warning: Could not initialize BME280 sensor: {e}")
     
