@@ -1,1 +1,4 @@
-codeExample.txt
+paper/
+Arhive/
+__pycache__/
+*.txt

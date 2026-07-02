@@ -6,5 +6,5 @@ adafruit-blinka
 adafruit-circuitpython-motor
 adafruit-circuitpython-pca9685
 adafruit-circuitpython-bme280
-adafruit-circuitpython-ads1x15
 adafruit-circuitpython-mpu6050
+Flask

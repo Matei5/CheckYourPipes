@@ -2,332 +2,558 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, orientation=landscape">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Pi Camera Control</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background: #000;
-            font-family: Arial, sans-serif;
-        }
-        
-        #video-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-        }
-        
-        img {
-            width: 100%;
-            height: 100%;
-            object-fit: fill;
-        }
-        #sensor-panel {
-            position: absolute;
-            top: 16px;
-            left: 16px;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            border-radius: 8px;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            z-index: 100;
-            max-height: 90vh;
-            overflow-y: auto;
-            transition: max-height 0.3s ease;
-        }
-        
-        #sensor-panel.collapsed {
-            max-height: 0;
-            opacity: 0;
-            border: none;
-            overflow: hidden;
-        }
-        
-        #sensor-panel.size-small {
-            padding: 8px 12px;
-            min-width: 100px;
-            font-size: 10px;
-        }
-        
-        #sensor-panel.size-medium {
-            padding: 12px 16px;
-            min-width: 140px;
-            font-size: 13px;
-        }
-        
-        #sensor-panel.size-large {
-            padding: 16px 20px;
-            min-width: 180px;
-            font-size: 16px;
-        }
-        
-        #size-buttons {
-            display: flex;
-            gap: 4px;
-            flex: 1;
-        }
-        
-        .size-btn {
-            background: rgba(59, 130, 246, 0.3);
-            border: 1px solid rgba(59, 130, 246, 0.5);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: bold;
-            transition: all 0.2s ease;
-            flex: 1;
-            text-align: center;
-        }
-        
-        .size-btn:hover {
-            background: rgba(59, 130, 246, 0.5);
-        }
-        
-        .size-btn.active {
-            background: rgba(59, 130, 246, 0.9);
-            border-color: rgba(59, 130, 246, 0.9);
-        }
-        
-        .sensor-item {
-            margin-bottom: 8px;
-        }
-        
-        .sensor-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .sensor-label {
-            color: rgba(255, 255, 255, 0.7);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        #sensor-panel.size-small .sensor-label {
-            font-size: 8px;
-        }
-        
-        #sensor-panel.size-medium .sensor-label {
-            font-size: 11px;
-        }
-        
-        #sensor-panel.size-large .sensor-label {
-            font-size: 13px;
-        }
-        
-        .sensor-value {
-            font-weight: bold;
-            color: #4ade80;
-            margin-top: 2px;
-        }
-        
-        #sensor-panel.size-small .sensor-value {
-            font-size: 13px;
-        }
-        
-        #sensor-panel.size-medium .sensor-value {
-            font-size: 16px;
-        }
-        
-        #sensor-panel.size-large .sensor-value {
-            font-size: 20px;
-        }
-        
-        .sensor-error {
-            color: #f87171;
-        }
-        
-        #panel-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        #sensor-toggle {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            border-radius: 8px;
-            border: 1px solid rgba(59, 130, 246, 0.5);
-            color: white;
-            padding: 8px 12px;
-            cursor: pointer;
-            z-index: 102;
-            font-size: 18px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.2s ease;
-        }
-        
-        #sensor-toggle:hover {
-            background: rgba(0, 0, 0, 0.9);
-            border-color: rgba(59, 130, 246, 0.9);
-        }
-        
-        #joystick-container {
-            position: absolute;
-            bottom: 16px;
-            right: 16px;
-            z-index: 100;
-            user-select: none;
-            transition: all 0.3s ease;
-        }
-        
-        #joystick-base {
-            border-radius: 50%;
-            background: rgba(59, 130, 246, 0.15);
-            border: 3px solid rgba(59, 130, 246, 0.4);
-            position: relative;
-            touch-action: none;
-            transition: all 0.3s ease;
-        }
-        
-        #joystick-container.size-small #joystick-base {
-            width: 80px;
-            height: 80px;
-        }
-        
-        #joystick-container.size-medium #joystick-base {
-            width: 110px;
-            height: 110px;
-        }
-        
-        #joystick-container.size-large #joystick-base {
-            width: 140px;
-            height: 140px;
-        }
-        
-        #joystick-stick {
-            border-radius: 50%;
-            background: rgba(59, 130, 246, 0.9);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.2);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            cursor: grab;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            color: white;
-            transition: box-shadow 0.1s ease;
-        }
-        
-        #joystick-container.size-small #joystick-stick {
-            width: 40px;
-            height: 40px;
-            font-size: 18px;
-        }
-        
-        #joystick-container.size-medium #joystick-stick {
-            width: 55px;
-            height: 55px;
-            font-size: 20px;
-        }
-        
-        #joystick-container.size-large #joystick-stick {
-            width: 70px;
-            height: 70px;
-            font-size: 24px;
-        }
-        
-        #joystick-stick:hover {
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.3);
-        }
-        
-        #joystick-stick.active {
-            cursor: grabbing;
-        }
-    </style>
+    <title>Pi Robot Control</title>
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
-    <div id="video-container">
+    <div id="video-container" style="position: relative;">
         <img src="/stream.mjpg" alt="Camera Stream">
-    </div>
-    
-    <button id="sensor-toggle">☰</button>
-    
-    <div id="sensor-panel" class="size-medium">
-        <div id="panel-header">
-            <div id="size-buttons">
-                <button class="size-btn" data-size="small">S</button>
-                <button class="size-btn active" data-size="medium">M</button>
-                <button class="size-btn" data-size="large">L</button>
+        <div id="car-model-widget">
+            <div id="car-wrapper">
+                <div class="car-chassis">
+                    <div class="car-front-indicator"></div>
+                    <div class="car-wheel w-fl"></div>
+                    <div class="car-wheel w-fr"></div>
+                    <div class="car-wheel w-rl"></div>
+                    <div class="car-wheel w-rr"></div>
+                    <div id="car-servo-base">
+                        <div id="car-camera-lens">
+                            <div id="car-tilt-indicator"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="car-info-block">
+                <div id="car-model-title">CAM POV</div>
+                <div id="car-degrees">
+                    <div class="car-deg-row"><span style="color:#facc15">PAN:</span> <span id="widget-pan">60</span>°</div>
+                    <div class="car-deg-row"><span style="color:#4ade80">TILT:</span> <span id="widget-tilt">75</span>°</div>
+                </div>
             </div>
         </div>
+    </div>
+    
+    <div id="top-toggles-container">
+        <!-- Keybinds Toggle Button -->
+        <button id="keybinds-toggle" title="Show Keybinds">&#9000;</button>
+        
+        <!-- Data Toggle Button -->
+        <button id="data-toggle" title="Toggle Data"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.1em; height: 1.1em;"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
+        
+        <!-- Settings Toggle Button -->
+        <button id="settings-toggle" title="Toggle Settings">&#9881;</button>
+        
+        <!-- Fullscreen Toggle Button -->
+        <button id="fullscreen-toggle" title="Toggle Fullscreen">&#9974;</button>
+    </div>
+    
+    <!-- Toast notification for UI hidden state -->
+    <div id="hide-ui-toast" class="hide-ui-toast">Press 'H' to unhide UI</div>
+    
+    <!-- Sensor Panel (Top-Left) -->
+    <div id="sensor-panel" class="size-medium">
         <div id="sensor-status">
             <div class="sensor-item">
-                <div class="sensor-label">Temperature</div>
+                <div class="sensor-label">Temp</div>
                 <div class="sensor-value">--</div>
             </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Humidity</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Pressure</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Accel X</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Accel Y</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Accel Z</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Gyro X</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Gyro Y</div>
-                <div class="sensor-value">--</div>
-            </div>
-            <div class="sensor-item">
-                <div class="sensor-label">Gyro Z</div>
-                <div class="sensor-value">--</div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="joystick-container">
-        <div id="joystick-base">
-            <div id="joystick-stick"></div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Mini-map (Bottom-Left) -->
+    <div id="minimap-panel" class="size-medium">
+        <div id="minimap-header">
+            <div id="minimap-zoom-controls">
+                <button id="minimap-center" class="minimap-zoom-btn" title="Recenter View">&#8982;</button>
+                <button id="minimap-zoom-out" class="minimap-zoom-btn">&#8722;</button>
+                <span id="minimap-zoom-label">1.0x</span>
+                <button id="minimap-zoom-in" class="minimap-zoom-btn">+</button>
+                <button id="minimap-popup" class="minimap-zoom-btn" title="Fullscreen Map">&#9974;</button>
+                <button id="snapshot-btn" class="minimap-zoom-btn snapshot-btn" title="Take Snapshot (E)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                </button>
+            </div>
+        </div>
+
+        <canvas id="minimap-canvas" width="220" height="220"></canvas>
+        <!-- Minimap Legend -->
+        <div id="minimap-legend">
+            <div class="legend-item"><span class="legend-dot green"></span> Path</div>
+            <div class="legend-item"><span class="legend-dot orange"></span> Wall</div>
+            <div class="legend-item"><span class="legend-dot red"></span> Gas</div>
+            <div class="legend-item"><span class="legend-dot purple"></span> Pin</div>
+        </div>
+    </div>
+    
+    <!-- Camera Controls (Bottom-Left) -->
+    <div id="camera-container" class="size-medium">
+        <div id="camera-joystick-container">
+            <div id="camera-joystick-handle"></div>
+        </div>
+    </div>
+
+    <!-- Controls (Bottom-Right) -->
+    <div id="controls-container" class="size-medium">
+        <div id="joystick-container">
+            <div id="joystick-handle"></div>
+        </div>
+    </div>
+
+    <!-- Keybinds Panel (Top-Center) -->
+    <div id="keybinds-panel" class="size-medium settings-panel">
+        <div id="keybinds-header">Keyboard Shortcuts</div>
+        <div class="settings-section">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Move Robot</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">W</kbd> <kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">A</kbd> <kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">S</kbd> <kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">D</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Move Camera</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">Arrows</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Emergency Stop</span>
+                    <div><kbd style="background: #c33; color: #fff; border: 1px solid #911; padding: 2px 10px; border-radius: 4px; box-shadow: 0 2px 0 #711; font-family: monospace; font-weight: bold; font-size: 13px;">Space</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Toggle Interface</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">H</kbd></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Take Panorama</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">P</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Hold High-Res Cam</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">F</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Snapshot</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">Q</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Enlarge Mini-Map</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">E</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Reset Map/Pose</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">R</kbd></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px;">
+                    <span style="color: var(--color-white); font-size: 14px; font-weight: 500;">Calibrate MPU</span>
+                    <div><kbd style="background: #333; color: #fff; border: 1px solid #555; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 0 #222; font-family: monospace; font-weight: bold; font-size: 13px;">C</kbd></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel (Top-Right) -->
+    <div id="settings-panel" class="size-medium">
+        <div id="settings-header">Settings</div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">Interface</div>
+            <div class="settings-item size-sensors-container">
+                <div class="settings-column">
+                    <label>Hide Interface</label>
+                    <div class="settings-size-buttons">
+                        <button id="toggle-hide-ui" class="size-btn">Hide</button>
+                    </div>
+                </div>
+                <div class="settings-column">
+                    <label>Interface Size</label>
+                    <div id="size-buttons" class="settings-size-buttons">
+                        <button class="size-btn" data-size="xs">XS</button>
+                        <button class="size-btn" data-size="small">S</button>
+                        <button class="size-btn active" data-size="medium">M</button>
+                        <button class="size-btn" data-size="large">L</button>
+                    </div>
+                </div>
+                <div class="settings-column">
+                    <label>Sensor Data</label>
+                    <div class="settings-size-buttons">
+                        <button id="sensor-toggle" class="size-btn active">Hide</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <div class="settings-section-title">Sensor Data Toggles</div>
+            <div class="settings-item">
+                <div class="settings-size-buttons" id="sensor-toggles-container">
+                    <button class="size-btn active" data-sensor="env">Environment</button>
+                    <button class="size-btn active" data-sensor="gas">Gas</button>
+                    <button class="size-btn active" data-sensor="accel">Accel</button>
+                    <button class="size-btn active" data-sensor="gyro">Gyro</button>
+                    <button class="size-btn active" data-sensor="distance">Distance</button>
+                    <button class="size-btn active" data-sensor="sys">System</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Navigation</div>
+            <div class="settings-item size-sensors-container">
+                <div class="settings-column">
+                    <label>Tracking Mode</label>
+                    <select id="pose-mode-select" class="settings-dropdown">
+                        <option value="encoders">Encoders</option>
+                        <option value="accelerometer">Accelerometer</option>
+                    </select>
+                </div>
+                <div class="settings-column">
+                    <label>ZUPT Calib.</label>
+                    <select id="zupt-select" class="settings-dropdown">
+                        <option value="false">Disabled</option>
+                        <option value="true">Enabled</option>
+                    </select>
+                </div>
+
+            </div>
+            <div class="settings-item">
+                <label for="throttle-slider">Throttle</label>
+                <div class="slider-container">
+                    <input type="range" id="throttle-slider" min="0.1" max="1.0" step="0.1" value="0.8">
+                    <span id="throttle-value">80%</span>
+                </div>
+            </div>
+            <div class="settings-item">
+                <label for="motor-trim-slider">Motor Trim (L/R Balance)</label>
+                <div class="slider-container">
+                    <input type="range" id="motor-trim-slider" min="-0.5" max="0.5" step="0.05" value="0.0">
+                    <span id="motor-trim-value">0%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Camera Control</div>
+            <div class="settings-item camera-settings-item">
+                <label for="camera-pan-slider">Rotation (Pan)</label>
+                <div class="slider-container camera-slider-container">
+                    <input type="range" id="camera-pan-slider" class="camera-slider" min="0" max="120" step="1" value="65">
+                    <span id="camera-pan-value" class="camera-value">65°</span>
+                </div>
+            </div>
+            <div class="settings-item camera-settings-item">
+                <label for="camera-tilt-slider">Angle (Tilt)</label>
+                <div class="slider-container camera-slider-container">
+                    <input type="range" id="camera-tilt-slider" class="camera-slider" min="0" max="120" step="1" value="75">
+                    <span id="camera-tilt-value" class="camera-value">75°</span>
+                </div>
+            </div>
+            <div class="settings-buttons-row" style="margin-top: 10px;">
+                <button id="toggle-hires-btn" class="settings-action-btn" style="width: 100%;">High-Res: OFF</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Robot Actions</div>
+            <div class="settings-buttons-row">
+                <button id="reset-pose-btn" class="settings-action-btn">Reset Map</button>
+                <button id="calibrate-mpu-btn" class="settings-action-btn">Calibrate MPU</button>
+            </div>
+            <div class="settings-buttons-row">
+                <button id="calibrate-mq2-btn" class="settings-action-btn">Calibrate MQ-2</button>
+                <button id="emergency-stop-btn" class="settings-action-btn btn-danger-action">Stop Motors</button>
+            </div>
+            <span id="robot-action-status" class="settings-status"></span>
+        </div>
+    </div>
+
+    <!-- Floating Pin Tooltip for charts -->
+    <div id="chart-pin-tooltip" style="
+        position: fixed;
+        display: none;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(168, 85, 247, 0.6);
+        color: #e2e8f0;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        pointer-events: none;
+        z-index: 9999;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        white-space: nowrap;
+    ">📍 <span id="chart-pin-tooltip-text"></span></div>
+
+    <!-- Data Modal (Semi-transparent popup) -->
+    <div id="data-modal" class="modal">
+        <div id="data-modal-content" class="modal-content size-medium">
+            <div class="modal-header">
+                <h2>Session Data</h2>
+                <div class="modal-controls">
+                    <button id="chart-refresh-btn" class="modal-control-btn" title="Refresh Data">Refresh</button>
+                    <button id="chart-autoupdate-btn" class="modal-control-btn paused" title="Resume Auto-Refresh">Play</button>
+                    <button id="chart-pins-toggle-btn" class="modal-control-btn" title="Show/Hide Pin Lines" style="background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.4); color: #c084fc;">📍 Pins</button>
+                </div>
+                <button id="data-modal-close" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="chart-time-filter-container">
+                    <div class="chart-time-range-group">
+                        <label class="time-filter-label">Time Range</label>
+                        <div class="time-inputs-wrapper">
+                            <input type="time" id="chart-start-time" class="chart-time-input" step="1">
+                            <span class="time-separator">to</span>
+                            <input type="time" id="chart-end-time" class="chart-time-input" step="1">
+                        </div>
+                    </div>
+                    
+                    <div class="chart-time-actions">
+                        <button id="chart-apply-filter-btn" class="modal-control-btn">Filter</button>
+                        <button id="chart-clear-filter-btn" class="modal-control-btn btn-danger">Clear</button>
+                    </div>
+
+                    <div class="chart-quick-time-group">
+                        <span class="quick-time-label">Last:</span>
+                        <div class="quick-time-buttons">
+                            <button class="quick-time-btn" data-minutes="1">1m</button>
+                            <button class="quick-time-btn" data-minutes="5">5m</button>
+                            <button class="quick-time-btn" data-minutes="10">10m</button>
+                            <button class="quick-time-btn" data-minutes="30">30m</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="charts-container">
+                    <div class="chart-wrapper">
+                        <h3>Environment</h3>
+                        <canvas id="chart-environment"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Motion (Acceleration)</h3>
+                        <canvas id="chart-motion"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Distance</h3>
+                        <canvas id="chart-distance"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <h3>Gas</h3>
+                        <canvas id="chart-gas"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="gap: 10px; flex-wrap: wrap; align-items: center; justify-content: center;">
+                <button id="data-export-btn" class="export-btn">&#128190; Export Data to CSV</button>
+                <label id="data-import-btn" class="export-btn" style="cursor:pointer; background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #6ee7b7;">
+                    &#128229; Import Data from CSV
+                    <input type="file" id="data-import-input" accept=".csv" style="display:none;">
+                </label>
+                <span id="export-status" class="export-status" style="width: 100%; text-align: center; margin-left: 0;"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Modal (Interactive Popup Map) -->
+    <div id="map-modal" class="modal">
+        <div id="map-modal-content" class="modal-content fullscreen-map-content">
+            <div class="modal-header">
+                <h2>Interactive Map</h2>
+                <button id="map-modal-close" class="modal-close">✕</button>
+            </div>
+            <div class="modal-body map-modal-body" style="display: flex; flex-direction: row; gap: 16px; height: 100%;">
+                <div class="pin-list-panel" style="width: 300px; display: flex; flex-direction: column; background: var(--bg-surface); padding: 12px; border-radius: 8px;">
+                    <h3 style="margin-top: 0; margin-bottom: 12px; color: var(--text-primary);">Pins & Snapshots</h3>
+                    <div class="pin-list-controls" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+                        <input type="text" id="pin-search" placeholder="Search pins..." style="width: 100%; box-sizing: border-box; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
+                        <select id="pin-sort" class="settings-select" style="width: 100%; box-sizing: border-box; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
+                            <option value="time_desc">Sort by Time (Newest)</option>
+                            <option value="time_asc">Sort by Time (Oldest)</option>
+                            <option value="name_asc">Sort by Name (A-Z)</option>
+                        </select>
+                        <button id="fs-map-fit-btn" class="snapshot-tool-btn" style="width: 100%; justify-content: center; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); margin-top: 4px;">Fit Path & Zoom</button>
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                            <button onclick="exportMapState()" class="snapshot-tool-btn" style="flex: 1; justify-content: center;">Export Map</button>
+                            <label class="snapshot-tool-btn" style="flex: 1; justify-content: center; cursor: pointer; text-align: center;">
+                                Import <input type="file" onchange="importMapState(event)" style="display:none;" accept=".json">
+                            </label>
+                        </div>
+                        <button onclick="generateReport()" class="snapshot-tool-btn" style="width: 100%; justify-content: center; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5); margin-top: 4px;">Generate Report</button>
+                    </div>
+                    <div id="pin-list-container" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
+                        <!-- Pin items generated here -->
+                    </div>
+                </div>
+                <div style="flex: 1; position: relative; border-radius: 8px; overflow: hidden; background: rgba(0, 0, 0, 0.45);">
+                    <canvas id="fullscreen-map-canvas"></canvas>
+                    <div id="map-tooltip" class="map-tooltip"></div>
+                    
+                    <!-- Map Legend -->
+                    <div class="map-legend">
+                        <h4>Legend</h4>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: rgba(57, 255, 20, 0.95); border-radius: 50%;"></span> Path
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: rgba(59, 130, 246, 0.95); border-radius: 50%;"></span> Robot Position
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: rgba(251, 146, 60, 0.95); border-radius: 50%;"></span> Obstacle
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: rgba(239, 68, 68, 0.95); border-radius: 50%;"></span> Gas Alert
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: rgba(168, 85, 247, 0.95); border-radius: 50%;"></span> Snapshot/Pin
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color" style="background: rgba(255, 255, 255, 0.5); border-radius: 50%;"></span> Start (0,0)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snapshot Annotation Modal -->
+    <div id="snapshot-modal" class="modal">
+        <div id="snapshot-modal-content" class="modal-content snapshot-modal-content">
+            <div class="modal-header">
+                <h2>&#128247; Annotate Snapshot</h2>
+                <button id="snapshot-modal-close" class="modal-close">&#10005;</button>
+            </div>
+            <div class="modal-body snapshot-modal-body">
+                <canvas id="snapshot-canvas"></canvas>
+            </div>
+            <div class="snapshot-toolbar">
+                <div class="snapshot-toolbar-left" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="text" id="snapshot-label" class="snapshot-label-input" placeholder="Describe the issue..." maxlength="100">
+                    <input type="color" id="snapshot-color-picker" value="#ff0000" title="Highlight Color" style="cursor: pointer; height: 36px; width: 36px; padding: 0; border: none; border-radius: 4px; background: transparent;">
+                </div>
+                <div class="snapshot-toolbar-right">
+                    <button id="snapshot-panorama-btn" class="snapshot-tool-btn" style="background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5); color: #d8b4fe;" title="Take 3x3 Panorama instead">Take Panorama</button>
+                    <button id="snapshot-undo" class="snapshot-tool-btn" title="Undo last rectangle">Undo</button>
+                    <button id="snapshot-clear" class="snapshot-tool-btn" title="Clear all rectangles">Clear</button>
+                    <button id="snapshot-cancel" class="snapshot-tool-btn snapshot-cancel-btn">Cancel</button>
+                    <button id="snapshot-save" class="snapshot-tool-btn snapshot-save-btn">&#128190; Save Pin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pin Edit Modal -->
+    <div id="pin-edit-modal" class="modal">
+        <div id="pin-edit-modal-content" class="modal-content size-medium">
+            <div class="modal-header">
+                <h2>&#128204; Edit Pin</h2>
+                <button id="pin-edit-modal-close" class="modal-close">&#10005;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-item">
+                    <label for="pin-edit-label">Pin Label / Description</label>
+                    <input type="text" id="pin-edit-label" class="snapshot-label-input" style="width: 100%; margin-top: 8px;">
+                </div>
+                <div id="pin-edit-snapshot-container" class="pin-edit-snapshot-container">
+                    <label class="pin-edit-snapshot-label">Attached Snapshot</label>
+                    <div class="pin-edit-snapshot-wrapper">
+                        <img id="pin-edit-snapshot-img">
+                    </div>
+            </div>
+            <div id="pin-edit-sensor-data" style="display:none; margin-top: 16px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <!-- Sensor data populated by JS -->
+            </div>
+            <div class="modal-footer" style="justify-content: space-between; margin-top: 20px;">
+                <button id="pin-edit-delete" class="modal-control-btn" style="background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;">&#128465; Delete Pin</button>
+                <div style="display: flex; gap: 8px;">
+                    <button id="pin-edit-view-data" class="modal-control-btn" style="display:none; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); color: #93c5fd;">&#128202; View Data</button>
+                    <button id="pin-edit-cancel" class="modal-control-btn snapshot-cancel-btn">Cancel</button>
+                    <button id="pin-edit-save" class="modal-control-btn snapshot-save-btn">&#128190; Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Keybinds Modal -->
+    <div id="keybinds-modal" class="modal">
+        <div id="keybinds-modal-content" class="modal-content size-small">
+            <div class="modal-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button id="keybinds-modal-close" class="modal-close">&#10005;</button>
+            </div>
+            <div class="modal-body keybinds-body">
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></div>
+                    <div class="keybind-desc">Move Robot</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>&#8593;</kbd> <kbd>&#8595;</kbd> <kbd>&#8592;</kbd> <kbd>&#8594;</kbd></div>
+                    <div class="keybind-desc">Move Camera</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>Space</kbd></div>
+                    <div class="keybind-desc">Emergency Stop</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>H</kbd></div>
+                    <div class="keybind-desc">Toggle UI Visibility</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>Ctrl</kbd> + <kbd>Z</kbd></div>
+                    <div class="keybind-desc">Show UI (Unhide)</div>
+                </div>
+                <div class="keybind-divider"></div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>P</kbd></div>
+                    <div class="keybind-desc">Take Panorama</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>F</kbd> (Hold)</div>
+                    <div class="keybind-desc">High-Res Camera</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>Q</kbd></div>
+                    <div class="keybind-desc">Quick Snapshot</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>E</kbd></div>
+                    <div class="keybind-desc">Enlarge Minimap</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>R</kbd></div>
+                    <div class="keybind-desc">Reset Map / Pose</div>
+                </div>
+                <div class="keybind-row">
+                    <div class="keybind-keys"><kbd>C</kbd></div>
+                    <div class="keybind-desc">Calibrate MPU</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating toast for global notifications (not bound to settings panel) -->
+    <div id="toast-notification" style="
+        display:none; position:fixed; bottom:28px; left:50%; transform:translateX(-50%);
+        background:rgba(30,30,40,0.92); border:1px solid rgba(255,255,255,0.15);
+        color:#e2e8f0; padding:10px 22px; border-radius:10px;
+        font-size:0.9rem; font-weight:500; letter-spacing:0.02em;
+        backdrop-filter:blur(8px); z-index:9999; pointer-events:none;
+        box-shadow:0 4px 24px rgba(0,0,0,0.4);
+    "></div>
+
+    <!-- High-res stream overlay shown while F is held -->
+    <div id="hires-overlay" style="
+        display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85);
+        z-index:9998; align-items:center; justify-content:center; flex-direction:column; gap:12px;
+    ">
+        <img id="hires-stream-img" src="" style="max-width:95vw; max-height:88vh; border-radius:8px; box-shadow:0 0 40px rgba(0,0,0,0.7);">
+        <span style="color:rgba(255,255,255,0.5); font-size:0.8rem;">Double tap or release F to return</span>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/config_state.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
